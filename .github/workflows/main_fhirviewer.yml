@@ -34,10 +34,8 @@ jobs:
           name: node-app
           path: |
             dist/
-            server.js
             package.json
             package-lock.json
-            node_modules/
 
   deploy:
     runs-on: ubuntu-latest

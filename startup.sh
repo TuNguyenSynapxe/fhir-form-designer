@@ -1,7 +1,8 @@
 #!/bin/bash
+# Azure App Service startup script for React app
 
-# Install serve globally to serve static files
+# Install serve globally
 npm install -g serve
 
-# Serve the built application on the port specified by Azure
+# Start the server
 serve -s dist -l $PORT
