@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar styles */
+.design-canvas-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #9CA3AF #F3F4F6;
+}
+
+.design-canvas-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.design-canvas-scroll::-webkit-scrollbar-track {
+  background: #F3F4F6;
+  border-radius: 4px;
+}
+
+.design-canvas-scroll::-webkit-scrollbar-thumb {
+  background: #9CA3AF;
+  border-radius: 4px;
+}
+
+.design-canvas-scroll::-webkit-scrollbar-thumb:hover {
+  background: #6B7280;
+}
