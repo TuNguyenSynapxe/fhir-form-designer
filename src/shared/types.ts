@@ -89,7 +89,7 @@ export interface FhirAddress {
 export type FhirResource = FhirPatient | FhirHumanName | FhirContactPoint | FhirAddress;
 
 // Template Field Types
-export type FieldType = "text" | "label" | "date" | "select" | "checkbox" | "group" | "widget";
+export type FieldType = "text" | "label" | "date" | "select" | "checkbox" | "group" | "widget" | "twoColumn";
 
 export interface BaseField {
   id: string;
@@ -149,7 +149,15 @@ export interface WidgetField extends BaseField {
   multiple?: boolean; // Whether this field can contain multiple instances
 }
 
-export type TemplateField = TextField | LabelField | DateField | SelectField | CheckboxField | GroupField | WidgetField;
+export interface TwoColumnField extends BaseField {
+  type: "twoColumn";
+  leftColumn: TemplateField[];
+  rightColumn: TemplateField[];
+  leftWidth?: number; // Percentage width for left column (default 50)
+  gap?: number; // Gap between columns in pixels (default 16)
+}
+
+export type TemplateField = TextField | LabelField | DateField | SelectField | CheckboxField | GroupField | WidgetField | TwoColumnField;
 
 // Template Definition
 export interface Template {

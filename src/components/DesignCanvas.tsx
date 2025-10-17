@@ -14,7 +14,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { DesignCanvasProps, TemplateField, DragItem, FhirResourceType } from '../shared/types';
+import type { DesignCanvasProps, TemplateField, DragItem, FhirResourceType, TwoColumnField } from '../shared/types';
 import { forceScrollbarVisibility } from '../shared/useScrollbarVisibility';
 import TemplateSelector from './TemplateSelector';
 import { getAvailableFieldNames } from '../shared/expressionEvaluator';
@@ -80,6 +80,232 @@ const DropZone: React.FC<DropZoneProps> = ({ position, onDrop, isActive = false 
   );
 };
 
+const getFieldIcon = (fieldType: string, fieldData?: any) => {
+  // Check for specific field types first based on inputType or label
+  if (fieldData) {
+    const inputType = (fieldData as any).inputType;
+    const label = fieldData.label?.toLowerCase() || '';
+    
+    if (inputType === 'email' || label.includes('email')) return '📧';
+    if (inputType === 'tel' || label.includes('phone')) return '📞';
+    if (label.includes('gender')) return '👤';
+  }
+  
+  // Default icons by field type
+  switch (fieldType) {
+    case 'text': return '📝';
+    case 'label': return '🏷️';
+    case 'date': return '📅';
+    case 'select': return '📋';
+    case 'checkbox': return '☑️';
+    case 'group': return '📦';
+    case 'widget': return '🧩';
+    case 'twoColumn': return '📐';
+    default: return '❓';
+  }
+};
+
+interface TwoColumnContainerProps {
+  field: TwoColumnField;
+  onFieldUpdate: (field: TemplateField) => void;
+  onFieldSelect: (field: TemplateField | null) => void;
+  selectedField: TemplateField | null;
+  resourceType: FhirResourceType;
+  availableFields: string[];
+}
+
+const TwoColumnContainer: React.FC<TwoColumnContainerProps> = ({ 
+  field, 
+  onFieldUpdate, 
+  onFieldSelect, 
+  selectedField, 
+  resourceType, 
+  availableFields 
+}) => {
+  const handleColumnDrop = (e: React.DragEvent, column: 'left' | 'right', position: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      const dragData = JSON.parse(e.dataTransfer.getData('application/json')) as DragItem;
+      
+      if (dragData.fieldType) {
+        const newField: TemplateField = {
+          ...dragData.defaultProps,
+          id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          type: dragData.fieldType,
+          order: position,
+        } as TemplateField;
+
+        const updatedField: TwoColumnField = {
+          ...field,
+          [column === 'left' ? 'leftColumn' : 'rightColumn']: [
+            ...field[column === 'left' ? 'leftColumn' : 'rightColumn'].slice(0, position),
+            newField,
+            ...field[column === 'left' ? 'leftColumn' : 'rightColumn'].slice(position)
+          ].map((f, index) => ({ ...f, order: index }))
+        };
+
+        onFieldUpdate(updatedField);
+      }
+    } catch (error) {
+      console.error('Failed to parse drop data:', error);
+    }
+  };
+
+  const handleFieldEdit = (columnField: TemplateField, column: 'left' | 'right') => {
+    const updatedField: TwoColumnField = {
+      ...field,
+      [column === 'left' ? 'leftColumn' : 'rightColumn']: 
+        field[column === 'left' ? 'leftColumn' : 'rightColumn']
+          .map(f => f.id === columnField.id ? columnField : f)
+    };
+    onFieldUpdate(updatedField);
+  };
+
+  const handleFieldDelete = (fieldId: string, column: 'left' | 'right') => {
+    const updatedField: TwoColumnField = {
+      ...field,
+      [column === 'left' ? 'leftColumn' : 'rightColumn']: 
+        field[column === 'left' ? 'leftColumn' : 'rightColumn']
+          .filter(f => f.id !== fieldId)
+          .map((f, i) => ({ ...f, order: i }))
+    };
+    onFieldUpdate(updatedField);
+  };
+
+  const handleDragEnd = (event: any, column: 'left' | 'right') => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const columnFields = field[column === 'left' ? 'leftColumn' : 'rightColumn'];
+      const oldIndex = columnFields.findIndex(field => field.id === active.id);
+      const newIndex = columnFields.findIndex(field => field.id === over.id);
+
+      const reorderedFields = arrayMove(columnFields, oldIndex, newIndex).map((f, index) => ({
+        ...f,
+        order: index
+      }));
+
+      const updatedField: TwoColumnField = {
+        ...field,
+        [column === 'left' ? 'leftColumn' : 'rightColumn']: reorderedFields
+      };
+
+      onFieldUpdate(updatedField);
+    }
+  };
+
+  const renderColumn = (columnFields: TemplateField[], column: 'left' | 'right') => {
+    return (
+      <div className="border border-dashed border-gray-300 rounded bg-gray-50 min-h-[100px] p-2">
+        <div className="text-xs text-gray-500 mb-2 text-center font-medium">
+          {column === 'left' ? 'Left Column' : 'Right Column'} ({columnFields.length} fields)
+        </div>
+        
+        <SortableContext 
+          items={columnFields.map(field => field.id)} 
+          strategy={verticalListSortingStrategy}
+        >
+          <DndContext onDragEnd={(event) => handleDragEnd(event, column)}>
+            {/* Drop zone at the top */}
+            <ColumnDropZone 
+              position={0} 
+              onDrop={(e, pos) => handleColumnDrop(e, column, pos)} 
+            />
+            
+            {columnFields.map((columnField, index) => (
+              <div key={columnField.id}>
+                <SortableField
+                  field={columnField}
+                  isSelected={selectedField?.id === columnField.id}
+                  onSelect={onFieldSelect}
+                  onDelete={(fieldId) => handleFieldDelete(fieldId, column)}
+                  onEdit={(editedField) => handleFieldEdit(editedField, column)}
+                  resourceType={resourceType}
+                  availableFields={availableFields}
+                />
+                {/* Drop zone after each field */}
+                <ColumnDropZone 
+                  position={index + 1} 
+                  onDrop={(e, pos) => handleColumnDrop(e, column, pos)} 
+                />
+              </div>
+            ))}
+          </DndContext>
+        </SortableContext>
+        
+        {columnFields.length === 0 && (
+          <div className="text-center text-gray-400 text-xs py-4">
+            Drop fields here
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="mt-3 border-t pt-3">
+      <div 
+        className="grid gap-2" 
+        style={{ 
+          gridTemplateColumns: `${field.leftWidth || 50}% 1fr`,
+          gap: `${field.gap || 16}px`
+        }}
+      >
+        {renderColumn(field.leftColumn, 'left')}
+        {renderColumn(field.rightColumn, 'right')}
+      </div>
+    </div>
+  );
+};
+
+interface ColumnDropZoneProps {
+  position: number;
+  onDrop: (e: React.DragEvent, position: number) => void;
+}
+
+const ColumnDropZone: React.FC<ColumnDropZoneProps> = ({ position, onDrop }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsHovered(false);
+    onDrop(e, position);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsHovered(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsHovered(false);
+    }
+  };
+
+  return (
+    <div
+      className={`transition-all duration-200 ${
+        isHovered
+          ? 'h-8 my-1 border border-dashed border-blue-400 bg-blue-100 rounded' 
+          : 'h-2 my-0.5'
+      }`}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+    >
+      {isHovered && (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-blue-600 text-xs">📥 Drop here</div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const SortableField: React.FC<SortableFieldProps> = ({
   field,
   isSelected,
@@ -116,29 +342,9 @@ const SortableField: React.FC<SortableFieldProps> = ({
     setIsEditing(false);
   };
 
-  const getFieldIcon = (fieldType: string, fieldData?: any) => {
-    // Check for specific field types first based on inputType or label
-    if (fieldData) {
-      const inputType = (fieldData as any).inputType;
-      const label = fieldData.label?.toLowerCase() || '';
-      
-      if (inputType === 'email' || label.includes('email')) return '📧';
-      if (inputType === 'tel' || label.includes('phone')) return '📞';
-      if (label.includes('gender')) return '👤';
-    }
-    
-    // Default icons by field type
-    switch (fieldType) {
-      case 'text': return '📝';
-      case 'label': return '🏷️';
-      case 'date': return '📅';
-      case 'select': return '📋';
-      case 'checkbox': return '☑️';
-      case 'group': return '📦';
-      case 'widget': return '🧩';
-      default: return '❓';
-    }
-  };
+
+
+
 
   const renderAdditionalConfigs = () => {
     const configs: string[] = [];
@@ -236,6 +442,18 @@ const SortableField: React.FC<SortableFieldProps> = ({
       }
     }
 
+    // Two Column field configurations
+    if (field.type === 'twoColumn') {
+      const twoColField = field as any;
+      const leftCount = twoColField.leftColumn?.length || 0;
+      const rightCount = twoColField.rightColumn?.length || 0;
+      configs.push(`Left: ${leftCount} fields`);
+      configs.push(`Right: ${rightCount} fields`);
+      if (twoColField.leftWidth && twoColField.leftWidth !== 50) {
+        configs.push(`Split: ${twoColField.leftWidth}/${100 - twoColField.leftWidth}%`);
+      }
+    }
+
     if (configs.length === 0) return null;
 
     return (
@@ -269,38 +487,41 @@ const SortableField: React.FC<SortableFieldProps> = ({
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            FHIR Path
-          </label>
-          <input
-            type="text"
-            value={editedField.fhirPath || ''}
-            onChange={(e) => setEditedField({ ...editedField, fhirPath: e.target.value })}
-            placeholder="e.g., name[0].given[0]"
-            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Expression
-            <span className="text-xs text-gray-500 ml-1">(overrides FHIR Path if provided)</span>
-          </label>
-          <input
-            type="text"
-            value={editedField.expression || ''}
-            onChange={(e) => setEditedField({ ...editedField, expression: e.target.value })}
-            placeholder="e.g., name[0].given[0] + ' ' + name[0].family"
-            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-          />
-          <div className="text-xs text-gray-500 mt-1">
-            <div className="mb-1">
-              <strong>Available field names:</strong> {availableFields.join(', ')}
+        {/* Only show FHIR Path and Expression for fields that need data binding */}
+        {field.type !== 'label' && field.type !== 'twoColumn' && (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                FHIR Path
+              </label>
+              <input
+                type="text"
+                value={editedField.fhirPath || ''}
+                onChange={(e) => setEditedField({ ...editedField, fhirPath: e.target.value })}
+                placeholder="e.g., name[0].given[0]"
+                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+              />
             </div>
-            <div className="mb-1">
-              <strong>FHIR Path Examples:</strong> 
-              {resourceType === 'Patient' && (
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Expression
+                <span className="text-xs text-gray-500 ml-1">(overrides FHIR Path if provided)</span>
+              </label>
+              <input
+                type="text"
+                value={editedField.expression || ''}
+                onChange={(e) => setEditedField({ ...editedField, expression: e.target.value })}
+                placeholder="e.g., name[0].given[0] + ' ' + name[0].family"
+                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+              />
+              <div className="text-xs text-gray-500 mt-1">
+                <div className="mb-1">
+                  <strong>Available field names:</strong> {availableFields.join(', ')}
+                </div>
+                <div className="mb-1">
+                  <strong>FHIR Path Examples:</strong> 
+                  {resourceType === 'Patient' && (
                 <>
                   <code className="bg-blue-100 px-1 rounded ml-1">name[0].given[0] + ' ' + name[0].family</code>
                   <code className="bg-blue-100 px-1 rounded ml-1">address[0].city + ', ' + address[0].state</code>
@@ -357,22 +578,25 @@ const SortableField: React.FC<SortableFieldProps> = ({
               </div>
             </div>
           </div>
-        </div>
+            </div>
+          </>
+        )}
 
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id={`hideIfEmpty-${field.id}`}
-            checked={editedField.hideIfEmpty || false}
-            onChange={(e) => setEditedField({ ...editedField, hideIfEmpty: e.target.checked })}
-            className="mr-2"
-          />
-          <label htmlFor={`hideIfEmpty-${field.id}`} className="text-sm text-gray-700">
-            Hide if no value (unchecked = show "N/A")
-          </label>
-        </div>
-
-
+        {/* Only show "Hide if no value" for fields that display data values */}
+        {field.type !== 'label' && field.type !== 'twoColumn' && (
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id={`hideIfEmpty-${field.id}`}
+              checked={editedField.hideIfEmpty || false}
+              onChange={(e) => setEditedField({ ...editedField, hideIfEmpty: e.target.checked })}
+              className="mr-2"
+            />
+            <label htmlFor={`hideIfEmpty-${field.id}`} className="text-sm text-gray-700">
+              Hide if no value (unchecked = show "N/A")
+            </label>
+          </div>
+        )}
 
         {field.type === 'label' && (
           <>
@@ -459,7 +683,55 @@ const SortableField: React.FC<SortableFieldProps> = ({
           </>
         )}
 
-
+        {field.type === 'twoColumn' && (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Left Column Width (%)
+              </label>
+              <input
+                type="number"
+                min="20"
+                max="80"
+                value={(editedField as any).leftWidth || 50}
+                onChange={(e) => {
+                  const twoColField = editedField as TwoColumnField;
+                  setEditedField({ 
+                    ...twoColField, 
+                    leftWidth: parseInt(e.target.value) || 50,
+                    leftColumn: twoColField.leftColumn || [],
+                    rightColumn: twoColField.rightColumn || []
+                  } as TemplateField);
+                }}
+                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Gap Between Columns (px)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="48"
+                value={(editedField as any).gap || 16}
+                onChange={(e) => {
+                  const twoColField = editedField as TwoColumnField;
+                  setEditedField({ 
+                    ...twoColField, 
+                    gap: parseInt(e.target.value) || 16,
+                    leftColumn: twoColField.leftColumn || [],
+                    rightColumn: twoColField.rightColumn || []
+                  } as TemplateField);
+                }}
+                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+              />
+            </div>
+            <div className="text-xs text-gray-500 mt-2">
+              <p><strong>Note:</strong> Fields can be dragged into the left and right columns of this container after it's created.</p>
+            </div>
+          </>
+        )}
 
         <div className="flex space-x-2">
           <button
@@ -510,6 +782,9 @@ const SortableField: React.FC<SortableFieldProps> = ({
           <button
             onClick={(e) => {
               e.stopPropagation();
+              if (!isEditing) {
+                setEditedField(field); // Reset to current field state when starting edit
+              }
               setIsEditing(!isEditing);
             }}
             className="text-gray-500 hover:text-blue-600 text-sm"
@@ -541,6 +816,18 @@ const SortableField: React.FC<SortableFieldProps> = ({
       )}
 
       {renderAdditionalConfigs()}
+
+      {/* Two Column Layout Interactive */}
+      {field.type === 'twoColumn' && !isEditing && (
+        <TwoColumnContainer 
+          field={field as TwoColumnField}
+          onFieldUpdate={onEdit}
+          onFieldSelect={(selectedField) => selectedField && onSelect(selectedField)}
+          selectedField={isSelected ? field : null}
+          resourceType={resourceType}
+          availableFields={availableFields}
+        />
+      )}
 
       {isEditing && renderEditForm()}
     </div>
@@ -605,12 +892,23 @@ const DesignCanvas: React.FC<DesignCanvasProps> = ({
       const dragData = JSON.parse(e.dataTransfer.getData('application/json')) as DragItem;
       
       if (dragData.fieldType) {
-        const newField: TemplateField = {
+        let newField: TemplateField = {
           ...dragData.defaultProps,
           id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           type: dragData.fieldType,
           order: position,
         } as TemplateField;
+
+        // Special handling for twoColumn field
+        if (dragData.fieldType === 'twoColumn') {
+          newField = {
+            ...newField,
+            leftColumn: [],
+            rightColumn: [],
+            leftWidth: 50,
+            gap: 16,
+          } as TwoColumnField;
+        }
         
         // Insert the new field at the specified position
         const updatedFields = [...fields];

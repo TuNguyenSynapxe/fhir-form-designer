@@ -57,7 +57,7 @@ interface FhirPatient {
 }
 
 // Template Types
-type FieldType = "text" | "label" | "date" | "select" | "checkbox" | "group";
+type FieldType = "text" | "label" | "date" | "select" | "checkbox" | "group" | "twoColumn";
 
 interface BaseField {
   id: string;
@@ -107,7 +107,15 @@ interface GroupField extends BaseField {
   defaultExpanded?: boolean;
 }
 
-type TemplateField = TextField | LabelField | DateField | SelectField | CheckboxField | GroupField;
+interface TwoColumnField extends BaseField {
+  type: "twoColumn";
+  leftColumn: TemplateField[];
+  rightColumn: TemplateField[];
+  leftWidth: number;
+  gap: number;
+}
+
+type TemplateField = TextField | LabelField | DateField | SelectField | CheckboxField | GroupField | TwoColumnField;
 
 interface Template {
   id: string;
@@ -390,6 +398,34 @@ const FhirViewer: React.FC<FhirViewerProps> = ({
                   .map(child => renderField(child))}
               </div>
             )}
+          </div>
+        );
+        
+      case "twoColumn":
+        const twoColumnField = field as TwoColumnField;
+        return (
+          <div key={field.id} className="mb-6">
+            <div 
+              className="grid gap-2" 
+              style={{ 
+                gridTemplateColumns: `${twoColumnField.leftWidth || 50}% 1fr`,
+                gap: `${twoColumnField.gap || 16}px`
+              }}
+            >
+              {/* Left Column */}
+              <div className="space-y-4">
+                {(twoColumnField.leftColumn || [])
+                  .sort((a, b) => a.order - b.order)
+                  .map(leftField => renderField(leftField))}
+              </div>
+              
+              {/* Right Column */}
+              <div className="space-y-4">
+                {(twoColumnField.rightColumn || [])
+                  .sort((a, b) => a.order - b.order)
+                  .map(rightField => renderField(rightField))}
+              </div>
+            </div>
           </div>
         );
         

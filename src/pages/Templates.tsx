@@ -10,6 +10,27 @@ const Templates: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedResourceType, setSelectedResourceType] = useState<FhirResourceType>('Patient');
+  const [filterResourceType, setFilterResourceType] = useState<FhirResourceType | 'All'>('All');
+
+  const getResourceTypeIcon = (resourceType: FhirResourceType) => {
+    switch (resourceType) {
+      case 'Patient': return '👤';
+      case 'HumanName': return '📝';
+      case 'ContactPoint': return '📞';
+      case 'Address': return '🏠';
+      default: return '📋';
+    }
+  };
+
+  const getResourceTypeColor = (resourceType: FhirResourceType) => {
+    switch (resourceType) {
+      case 'Patient': return 'bg-blue-100 text-blue-800';
+      case 'HumanName': return 'bg-green-100 text-green-800';
+      case 'ContactPoint': return 'bg-purple-100 text-purple-800';
+      case 'Address': return 'bg-orange-100 text-orange-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   useEffect(() => {
     loadTemplates();
@@ -151,10 +172,14 @@ const Templates: React.FC = () => {
     input.click();
   };
 
-  const filteredTemplates = templates.filter(template =>
-    template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    template.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTemplates = templates.filter(template => {
+    const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      template.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesResourceType = filterResourceType === 'All' || template.resourceType === filterResourceType;
+    
+    return matchesSearch && matchesResourceType;
+  });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -182,29 +207,113 @@ const Templates: React.FC = () => {
           </div>
         </div>
 
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search templates..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <svg
-            className="absolute right-3 top-2.5 h-5 w-5 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        <div className="flex gap-4 items-center">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              placeholder="Search templates..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </svg>
+            <svg
+              className="absolute right-3 top-2.5 h-5 w-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <label htmlFor="resourceTypeFilter" className="text-sm font-medium text-gray-700 whitespace-nowrap">
+              Filter by type:
+            </label>
+            <select
+              id="resourceTypeFilter"
+              value={filterResourceType}
+              onChange={(e) => setFilterResourceType(e.target.value as FhirResourceType | 'All')}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            >
+              <option value="All">📋 All Types</option>
+              <option value="Patient">👤 Patient</option>
+              <option value="HumanName">📝 HumanName</option>
+              <option value="ContactPoint">📞 ContactPoint</option>
+              <option value="Address">🏠 Address</option>
+            </select>
+          </div>
         </div>
       </div>
+
+      {/* Resource Type Summary */}
+      {templates.length > 0 && (
+        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Templates by Resource Type:</h4>
+          <div className="flex flex-wrap gap-2">
+            {(['Patient', 'HumanName', 'ContactPoint', 'Address'] as FhirResourceType[]).map(resourceType => {
+              const count = templates.filter(t => t.resourceType === resourceType).length;
+              return count > 0 ? (
+                <button
+                  key={resourceType}
+                  onClick={() => setFilterResourceType(resourceType)}
+                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm border transition-colors ${
+                    filterResourceType === resourceType 
+                      ? getResourceTypeColor(resourceType) + ' border-current'
+                      : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <span>{getResourceTypeIcon(resourceType)}</span>
+                  {resourceType} ({count})
+                </button>
+              ) : null;
+            })}
+            {templates.length > 0 && (
+              <button
+                onClick={() => setFilterResourceType('All')}
+                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm border transition-colors ${
+                  filterResourceType === 'All' 
+                    ? 'bg-blue-100 text-blue-800 border-blue-200'
+                    : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                📋 All ({templates.length})
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Filter Results Summary */}
+      {templates.length > 0 && (
+        <div className="mb-6 flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            Showing {filteredTemplates.length} of {templates.length} templates
+            {filterResourceType !== 'All' && (
+              <span className={`ml-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getResourceTypeColor(filterResourceType as FhirResourceType)}`}>
+                <span>{getResourceTypeIcon(filterResourceType as FhirResourceType)}</span>
+                {filterResourceType}
+              </span>
+            )}
+          </div>
+          {(searchTerm || filterResourceType !== 'All') && (
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setFilterResourceType('All');
+              }}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
 
       {filteredTemplates.length === 0 ? (
         <div className="text-center py-12">
@@ -221,9 +330,16 @@ const Templates: React.FC = () => {
               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
             />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No templates</h3>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">
+            {templates.length === 0 ? 'No templates' : 'No matching templates'}
+          </h3>
           <p className="mt-1 text-sm text-gray-500">
-            Get started by creating your first FHIR template or generate sample templates.
+            {templates.length === 0 
+              ? 'Get started by creating your first FHIR template or generate sample templates.'
+              : searchTerm || filterResourceType !== 'All'
+                ? 'Try adjusting your search or filter criteria.'
+                : 'No templates found.'
+            }
           </p>
           <div className="mt-6 flex justify-center">
             <button
@@ -249,7 +365,8 @@ const Templates: React.FC = () => {
                   <h3 className="text-lg font-semibold text-gray-900 truncate">
                     {template.name}
                   </h3>
-                  <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                  <span className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${getResourceTypeColor(template.resourceType)}`}>
+                    <span>{getResourceTypeIcon(template.resourceType)}</span>
                     {template.resourceType}
                   </span>
                 </div>

@@ -119,6 +119,22 @@ const getPrimitiveFieldConfigs = (): FieldConfig[] => [
       required: false,
       order: 0
     }
+  },
+  {
+    type: 'twoColumn',
+    label: '2-Column Layout',
+    icon: '📐',
+    description: 'Two-column container for side-by-side layout',
+    defaultProps: {
+      type: 'twoColumn',
+      label: '2-Column Layout',
+      leftColumn: [],
+      rightColumn: [],
+      leftWidth: 50,
+      gap: 16,
+      required: false,
+      order: 0
+    }
   }
 ];
 

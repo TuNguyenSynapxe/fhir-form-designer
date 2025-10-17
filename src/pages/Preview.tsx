@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import get from 'lodash.get';
-import type { Template, FhirResource, TemplateField } from '../shared/types';
+import type { Template, FhirResource, TemplateField, TwoColumnField } from '../shared/types';
 import { getSampleDataByResourceType } from '../shared/sampleData';
 import { evaluateExpression } from '../shared/expressionEvaluator';
 
@@ -676,6 +676,34 @@ const Preview: React.FC = () => {
         
       case 'widget':
         return renderNestedWidget(field);
+        
+      case 'twoColumn':
+        const twoColumnField = field as TwoColumnField;
+        return (
+          <div key={field.id} className="mb-6">
+            <div 
+              className="grid gap-2" 
+              style={{ 
+                gridTemplateColumns: `${twoColumnField.leftWidth || 50}% 1fr`,
+                gap: `${twoColumnField.gap || 16}px`
+              }}
+            >
+              {/* Left Column */}
+              <div className="space-y-4">
+                {(twoColumnField.leftColumn || [])
+                  .sort((a: TemplateField, b: TemplateField) => a.order - b.order)
+                  .map((leftField: TemplateField) => renderField(leftField))}
+              </div>
+              
+              {/* Right Column */}
+              <div className="space-y-4">
+                {(twoColumnField.rightColumn || [])
+                  .sort((a: TemplateField, b: TemplateField) => a.order - b.order)
+                  .map((rightField: TemplateField) => renderField(rightField))}
+              </div>
+            </div>
+          </div>
+        );
         
       default:
         return null;

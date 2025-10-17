@@ -1,6 +1,6 @@
 import React from 'react';
 import get from 'lodash.get';
-import type { LivePreviewProps, TemplateField, FhirResource, Template } from '../shared/types';
+import type { LivePreviewProps, TemplateField, FhirResource, Template, TwoColumnField } from '../shared/types';
 import { evaluateExpression } from '../shared/expressionEvaluator';
 
 const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
@@ -566,6 +566,34 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
         
       case 'widget':
         return renderNestedWidget(field);
+        
+      case 'twoColumn':
+        const twoColumnField = field as TwoColumnField;
+        return (
+          <div key={field.id} className="mb-6">
+            <div 
+              className="grid gap-2" 
+              style={{ 
+                gridTemplateColumns: `${twoColumnField.leftWidth || 50}% 1fr`,
+                gap: `${twoColumnField.gap || 16}px`
+              }}
+            >
+              {/* Left Column */}
+              <div className="space-y-4">
+                {(twoColumnField.leftColumn || [])
+                  .sort((a: TemplateField, b: TemplateField) => a.order - b.order)
+                  .map((leftField: TemplateField) => renderField(leftField))}
+              </div>
+              
+              {/* Right Column */}
+              <div className="space-y-4">
+                {(twoColumnField.rightColumn || [])
+                  .sort((a: TemplateField, b: TemplateField) => a.order - b.order)
+                  .map((rightField: TemplateField) => renderField(rightField))}
+              </div>
+            </div>
+          </div>
+        );
         
       default:
         return (
