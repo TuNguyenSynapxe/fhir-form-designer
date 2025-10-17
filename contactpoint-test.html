@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test ContactPoint Issue</title>
+</head>
+<body>
+    <h1>ContactPoint Preview Test</h1>
+    <p>Steps to reproduce the issue:</p>
+    <ol>
+        <li>Open the application at <a href="http://localhost:5175" target="_blank">http://localhost:5175</a></li>
+        <li>Click "Generate Sample Templates" to create sample templates</li>
+        <li>Find the ContactPoint template and click "Preview"</li>
+        <li>Check browser console for any errors or debug messages</li>
+    </ol>
+    
+    <h2>Expected ContactPoint Data Structure:</h2>
+    <pre>{
+  "resourceType": "ContactPoint",
+  "system": "email",
+  "value": "sarah.johnson@hospital.org", 
+  "use": "work",
+  "rank": 1
+}</pre>
+
+    <h2>Expected Fields:</h2>
+    <ul>
+        <li>Contact System (select) - fhirPath: 'system'</li>
+        <li>Contact Value (text) - fhirPath: 'value'</li>
+        <li>Use (select) - fhirPath: 'use'</li>
+        <li>Rank (text) - fhirPath: 'rank'</li>
+    </ul>
+</body>
+</html>

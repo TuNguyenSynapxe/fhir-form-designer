@@ -202,7 +202,7 @@ export interface ToolbarProps {
   onSave: () => void;
   onExport: () => void;
   onImport: (template: Template) => void;
-  onPreview: () => void;
+  onPreview?: () => void;
 }
 
 export interface FhirViewerProps {

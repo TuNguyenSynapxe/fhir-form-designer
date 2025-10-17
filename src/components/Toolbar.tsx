@@ -124,12 +124,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
           Export
         </button>
         
-        <button
-          onClick={onPreview}
-          className="bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700 transition-colors"
-        >
-          Preview
-        </button>
+        {onPreview && (
+          <button
+            onClick={onPreview}
+            className="bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700 transition-colors"
+          >
+            Preview
+          </button>
+        )}
         
         <button
           onClick={onSave}

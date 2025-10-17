@@ -4,11 +4,21 @@ import type { LivePreviewProps, TemplateField, FhirResource, Template } from '..
 import { evaluateExpression } from '../shared/expressionEvaluator';
 
 const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
+  const getResourceIcon = (resourceType: string): string => {
+    switch (resourceType) {
+      case 'Patient': return '👤';
+      case 'HumanName': return '📝';
+      case 'ContactPoint': return '📞';
+      case 'Address': return '🏠';
+      default: return '📋';
+    }
+  };
+
   const getFieldValue = (fhirPath: string, data: FhirResource | null): any => {
     if (!fhirPath || !data) return '';
     
     try {
-      // Handle special cases for telecom arrays (Patient and ContactPoint resources)
+      // Handle special cases for telecom arrays (Patient resource only)
       if (fhirPath.includes('telecom.find(t => t.system === "email").value')) {
         const telecom = (data as any).telecom || [];
         const emailEntry = telecom.find((t: any) => t.system === 'email');
@@ -37,6 +47,76 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
       console.error('Error resolving FHIR path:', fhirPath, error);
       return '';
     }
+  };
+
+  const generateItemLabel = (item: any, resourceType: string, index: number): string => {
+    if (!item) return `Item ${index + 1}`;
+    
+    try {
+      switch (resourceType) {
+        case 'HumanName':
+          // Try to create a label from name components
+          const given = item.given?.[0] || item.firstName;
+          const family = item.family || item.lastName;
+          if (given || family) {
+            return [given, family].filter(Boolean).join(' ');
+          }
+          // Fallback to use/prefix if available
+          if (item.use) return `${item.use.charAt(0).toUpperCase() + item.use.slice(1)} Name`;
+          if (item.prefix) return `${item.prefix} Name`;
+          break;
+          
+        case 'ContactPoint':
+          // Try to create a label from system and value
+          const system = item.system || 'Contact';
+          const value = item.value;
+          if (value) {
+            const systemLabel = system.charAt(0).toUpperCase() + system.slice(1);
+            return `${systemLabel}: ${value}`;
+          }
+          if (item.use) return `${item.use.charAt(0).toUpperCase() + item.use.slice(1)} ${system}`;
+          return `${system.charAt(0).toUpperCase() + system.slice(1)} Contact`;
+          
+        case 'Address':
+          // Try to create a label from address components
+          const line1 = item.line?.[0] || item.street;
+          const city = item.city;
+          const state = item.state;
+          
+          if (line1 && city) {
+            return `${line1}, ${city}`;
+          } else if (city && state) {
+            return `${city}, ${state}`;
+          } else if (city) {
+            return city;
+          } else if (line1) {
+            return line1;
+          }
+          
+          // Fallback to use if available
+          if (item.use) return `${item.use.charAt(0).toUpperCase() + item.use.slice(1)} Address`;
+          if (item.type) return `${item.type.charAt(0).toUpperCase() + item.type.slice(1)} Address`;
+          break;
+          
+        case 'Patient':
+          // For patient, try to get name
+          const patientName = item.name?.[0];
+          if (patientName) {
+            const firstName = patientName.given?.[0];
+            const lastName = patientName.family;
+            if (firstName || lastName) {
+              return [firstName, lastName].filter(Boolean).join(' ');
+            }
+          }
+          if (item.id) return `Patient ${item.id}`;
+          break;
+      }
+    } catch (error) {
+      console.warn('Error generating item label:', error);
+    }
+    
+    // Fallback to generic numbering
+    return `${resourceType} ${index + 1}`;
   };
 
   const renderNestedWidget = (field: TemplateField): React.ReactNode => {
@@ -102,64 +182,40 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
     }
 
     return (
-      <div key={field.id} className="mb-4 border border-blue-200 rounded-lg bg-blue-50">
-        <div className="px-4 py-2 bg-blue-100 border-b border-blue-200 rounded-t-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span>🧩</span>
-              <h4 className="font-medium text-gray-900">{field.label}</h4>
-            </div>
-            <div className="flex items-center space-x-2 text-xs">
-              <span className="bg-blue-200 text-blue-800 px-2 py-1 rounded">
-                {nestedTemplate.name}
-              </span>
-              <span className="bg-gray-200 text-gray-600 px-2 py-1 rounded">
-                {resourceType}
-              </span>
-              {nestedTemplate.sampleData && !field.fhirPath && (
-                <span className="bg-green-200 text-green-700 px-2 py-1 rounded">
-                  Template Data
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        <div className="p-4">
-          {widgetField.multiple && Array.isArray(nestedData) ? (
-            // Render multiple instances
-            nestedData.length > 0 ? (
-              <div className="space-y-4">
-                {nestedData.map((item, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4 bg-white">
-                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
-                      <div className="text-sm font-medium text-gray-700">Item {index + 1}</div>
-                      <div className="text-xs text-gray-500">{nestedTemplate!.name}</div>
-                    </div>
-                    <div className="space-y-3">
-                      {nestedTemplate!.fields
-                        .sort((a, b) => a.order - b.order)
-                        .map((nestedField) => renderNestedField(nestedField, item))}
-                    </div>
+      <React.Fragment key={field.id}>
+        {widgetField.multiple && Array.isArray(nestedData) ? (
+          // Render multiple instances
+          nestedData.length > 0 ? (
+            <div className="space-y-4">
+              {nestedData.map((item, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-4 bg-white">
+                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+                    <div className="text-sm font-medium text-gray-700">{generateItemLabel(item, resourceType, index)}</div>
+                    <div className="text-xs text-gray-500">{resourceType}</div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-4 text-center text-gray-500 border border-gray-200 rounded-lg bg-gray-50">
-                <span className="block text-2xl mb-2">📭</span>
-                <p className="text-sm">No items to display</p>
-              </div>
-            )
-          ) : (
-            // Render single instance
-            <div className="space-y-3">
-              {nestedTemplate.fields
-                .sort((a, b) => a.order - b.order)
-                .map((nestedField) => renderNestedField(nestedField, nestedData))}
+                  <div className="space-y-3">
+                    {nestedTemplate!.fields
+                      .sort((a, b) => a.order - b.order)
+                      .map((nestedField) => renderNestedField(nestedField, item))}
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
-        </div>
-      </div>
+          ) : (
+            <div className="p-4 text-center text-gray-500 border border-gray-200 rounded-lg bg-gray-50">
+              <span className="block text-2xl mb-2">📭</span>
+              <p className="text-sm">No items to display</p>
+            </div>
+          )
+        ) : (
+          // Render single instance
+          <div className="space-y-3">
+            {nestedTemplate.fields
+              .sort((a, b) => a.order - b.order)
+              .map((nestedField) => renderNestedField(nestedField, nestedData))}
+          </div>
+        )}
+      </React.Fragment>
     );
   };
 
@@ -441,9 +497,9 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
           if (field.label.toLowerCase().includes('gender')) {
             return value === 'male' ? '👨' : value === 'female' ? '👩' : '👤';
           }
-          if (field.label.toLowerCase().includes('status')) return '�';
+          if (field.label.toLowerCase().includes('status')) return '📊';
           if (field.label.toLowerCase().includes('type')) return '🏷️';
-          return '�📋';
+          return '📋';
         };
         
         return (
@@ -578,7 +634,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
             {template.name && (
               <div className="px-6 py-4 bg-blue-50 border-b border-blue-100 rounded-t-lg">
                 <h2 className="text-2xl font-bold text-blue-900 flex items-center">
-                  <span className="mr-3">👤</span>
+                  <span className="mr-3">{getResourceIcon(template.resourceType)}</span>
                   {template.name}
                 </h2>
                 {template.description && (

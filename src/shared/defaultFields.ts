@@ -160,7 +160,302 @@ export const getFieldConfigsForResourceType = (resourceType: FhirResourceType): 
   return [...primitiveFields, ...widgetFields];
 };
 
-export const getDefaultFieldsForResourceType = (_resourceType: FhirResourceType): TemplateField[] => {
-  // No default fields - users will add what they need from the field palette
-  return [];
+export const getDefaultFieldsForResourceType = (resourceType: FhirResourceType): TemplateField[] => {
+  const generateId = () => Math.random().toString(36).substr(2, 9);
+
+  switch (resourceType) {
+    case 'Patient':
+      return [
+        {
+          id: generateId(),
+          type: 'label',
+          label: 'Patient Information',
+          fhirPath: '',
+          required: false,
+          order: 0,
+          fontSize: 'lg',
+          fontWeight: 'bold'
+        },
+        {
+          id: generateId(),
+          type: 'text',
+          label: 'First Name',
+          fhirPath: 'name[0].given[0]',
+          required: true,
+          order: 1
+        },
+        {
+          id: generateId(),
+          type: 'text',
+          label: 'Last Name',
+          fhirPath: 'name[0].family',
+          required: true,
+          order: 2
+        },
+        {
+          id: generateId(),
+          type: 'date',
+          label: 'Date of Birth',
+          fhirPath: 'birthDate',
+          required: false,
+          order: 3
+        },
+        {
+          id: generateId(),
+          type: 'select',
+          label: 'Gender',
+          fhirPath: 'gender',
+          required: false,
+          order: 4,
+          options: [
+            { label: 'Male', value: 'male' },
+            { label: 'Female', value: 'female' },
+            { label: 'Other', value: 'other' },
+            { label: 'Unknown', value: 'unknown' }
+          ]
+        },
+        {
+          id: generateId(),
+          type: 'text',
+          label: 'Email',
+          fhirPath: "telecom.find(t => t.system === 'email').value",
+          required: false,
+          order: 5
+        },
+        {
+          id: generateId(),
+          type: 'text',
+          label: 'Phone',
+          fhirPath: "telecom.find(t => t.system === 'phone').value",
+          required: false,
+          order: 6
+        }
+      ];
+
+    case 'HumanName':
+      return [
+        {
+          id: generateId(),
+          type: 'label',
+          label: 'Name Details',
+          fhirPath: '',
+          required: false,
+          order: 0,
+          fontSize: 'lg',
+          fontWeight: 'bold'
+        },
+        {
+          id: generateId(),
+          type: 'select',
+          label: 'Name Use',
+          fhirPath: 'use',
+          required: false,
+          order: 1,
+          options: [
+            { label: 'Usual', value: 'usual' },
+            { label: 'Official', value: 'official' },
+            { label: 'Temp', value: 'temp' },
+            { label: 'Nickname', value: 'nickname' },
+            { label: 'Anonymous', value: 'anonymous' },
+            { label: 'Old', value: 'old' },
+            { label: 'Maiden', value: 'maiden' }
+          ]
+        },
+        {
+          id: generateId(),
+          type: 'text',
+          label: 'Prefix',
+          fhirPath: 'prefix[0]',
+          required: false,
+          order: 2
+        },
+        {
+          id: generateId(),
+          type: 'text',
+          label: 'First Name',
+          fhirPath: 'given[0]',
+          required: true,
+          order: 3
+        },
+        {
+          id: generateId(),
+          type: 'text',
+          label: 'Middle Name',
+          fhirPath: 'given[1]',
+          required: false,
+          order: 4
+        },
+        {
+          id: generateId(),
+          type: 'text',
+          label: 'Family Name',
+          fhirPath: 'family',
+          required: true,
+          order: 5
+        },
+        {
+          id: generateId(),
+          type: 'text',
+          label: 'Suffix',
+          fhirPath: 'suffix[0]',
+          required: false,
+          order: 6
+        }
+      ];
+
+    case 'ContactPoint':
+      return [
+        {
+          id: generateId(),
+          type: 'label',
+          label: 'Contact Information',
+          fhirPath: '',
+          required: false,
+          order: 0,
+          fontSize: 'lg',
+          fontWeight: 'bold'
+        },
+        {
+          id: generateId(),
+          type: 'select',
+          label: 'Contact System',
+          fhirPath: 'system',
+          required: true,
+          order: 1,
+          options: [
+            { label: 'Phone', value: 'phone' },
+            { label: 'Fax', value: 'fax' },
+            { label: 'Email', value: 'email' },
+            { label: 'Pager', value: 'pager' },
+            { label: 'URL', value: 'url' },
+            { label: 'SMS', value: 'sms' },
+            { label: 'Other', value: 'other' }
+          ]
+        },
+        {
+          id: generateId(),
+          type: 'text',
+          label: 'Contact Value',
+          fhirPath: 'value',
+          required: true,
+          order: 2
+        },
+        {
+          id: generateId(),
+          type: 'select',
+          label: 'Use',
+          fhirPath: 'use',
+          required: false,
+          order: 3,
+          options: [
+            { label: 'Home', value: 'home' },
+            { label: 'Work', value: 'work' },
+            { label: 'Temp', value: 'temp' },
+            { label: 'Old', value: 'old' },
+            { label: 'Mobile', value: 'mobile' }
+          ]
+        },
+        {
+          id: generateId(),
+          type: 'text',
+          label: 'Rank',
+          fhirPath: 'rank',
+          required: false,
+          order: 4
+        }
+      ];
+
+    case 'Address':
+      return [
+        {
+          id: generateId(),
+          type: 'label',
+          label: 'Address Information',
+          fhirPath: '',
+          required: false,
+          order: 0,
+          fontSize: 'lg',
+          fontWeight: 'bold'
+        },
+        {
+          id: generateId(),
+          type: 'select',
+          label: 'Address Use',
+          fhirPath: 'use',
+          required: false,
+          order: 1,
+          options: [
+            { label: 'Home', value: 'home' },
+            { label: 'Work', value: 'work' },
+            { label: 'Temp', value: 'temp' },
+            { label: 'Old', value: 'old' },
+            { label: 'Billing', value: 'billing' }
+          ]
+        },
+        {
+          id: generateId(),
+          type: 'select',
+          label: 'Address Type',
+          fhirPath: 'type',
+          required: false,
+          order: 2,
+          options: [
+            { label: 'Postal', value: 'postal' },
+            { label: 'Physical', value: 'physical' },
+            { label: 'Both', value: 'both' }
+          ]
+        },
+        {
+          id: generateId(),
+          type: 'text',
+          label: 'Street Address',
+          fhirPath: 'line[0]',
+          required: true,
+          order: 3
+        },
+        {
+          id: generateId(),
+          type: 'text',
+          label: 'Address Line 2',
+          fhirPath: 'line[1]',
+          required: false,
+          order: 4
+        },
+        {
+          id: generateId(),
+          type: 'text',
+          label: 'City',
+          fhirPath: 'city',
+          required: true,
+          order: 5
+        },
+        {
+          id: generateId(),
+          type: 'text',
+          label: 'State/Province',
+          fhirPath: 'state',
+          required: false,
+          order: 6
+        },
+        {
+          id: generateId(),
+          type: 'text',
+          label: 'Postal Code',
+          fhirPath: 'postalCode',
+          required: false,
+          order: 7
+        },
+        {
+          id: generateId(),
+          type: 'text',
+          label: 'Country',
+          fhirPath: 'country',
+          required: false,
+          order: 8
+        }
+      ];
+
+    default:
+      return [];
+  }
 };

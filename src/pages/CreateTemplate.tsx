@@ -16,8 +16,14 @@ const CreateTemplate: React.FC = () => {
     const saved = localStorage.getItem('fhir-designer-panel-width');
     return saved ? parseInt(saved, 10) : 384; // 384px = w-96 default
   });
+  const [sampleDataHeight, setSampleDataHeight] = useState(() => {
+    const saved = localStorage.getItem('fhir-designer-sample-height');
+    return saved ? parseInt(saved, 10) : 300; // 300px default
+  });
   const [isResizing, setIsResizing] = useState(false);
+  const [isVerticalResizing, setIsVerticalResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const rightPanelRef = useRef<HTMLDivElement>(null);
 
   const [template, setTemplate] = useState<Template>({
     id: '',
@@ -33,7 +39,7 @@ const CreateTemplate: React.FC = () => {
   const [selectedField, setSelectedField] = useState<TemplateField | null>(null);
   const [sampleJsonValue, setSampleJsonValue] = useState<string>('');
   const [sampleData, setSampleData] = useState<FhirResource | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
+
 
   // Resize handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -66,7 +72,27 @@ const CreateTemplate: React.FC = () => {
 
   const handleMouseUp = useCallback(() => {
     setIsResizing(false);
+    setIsVerticalResizing(false);
   }, []);
+
+  // Vertical resizing handlers
+  const handleVerticalMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsVerticalResizing(true);
+  }, []);
+
+  const handleVerticalMouseMove = useCallback((e: MouseEvent) => {
+    if (!isVerticalResizing || !rightPanelRef.current) return;
+    
+    const panelRect = rightPanelRef.current.getBoundingClientRect();
+    const mouseY = e.clientY - panelRect.top;
+    const minHeight = 200; // Minimum height for each panel
+    const maxHeight = panelRect.height - minHeight - 4; // Account for resize handle
+    
+    const newSampleHeight = Math.min(Math.max(minHeight, mouseY), maxHeight);
+    setSampleDataHeight(newSampleHeight);
+    localStorage.setItem('fhir-designer-sample-height', newSampleHeight.toString());
+  }, [isVerticalResizing]);
 
   // Add keyboard shortcuts for panel resizing
   useEffect(() => {
@@ -118,7 +144,21 @@ const CreateTemplate: React.FC = () => {
         document.body.style.userSelect = '';
       };
     }
-  }, [isResizing, handleMouseMove, handleMouseUp]);
+    
+    if (isVerticalResizing) {
+      document.addEventListener('mousemove', handleVerticalMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'row-resize';
+      document.body.style.userSelect = 'none';
+      
+      return () => {
+        document.removeEventListener('mousemove', handleVerticalMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+    }
+  }, [isResizing, isVerticalResizing, handleMouseMove, handleVerticalMouseMove, handleMouseUp]);
 
   useEffect(() => {
     if (templateId) {
@@ -133,21 +173,26 @@ const CreateTemplate: React.FC = () => {
   }, [templateId]);
 
   useEffect(() => {
-    // Load sample data when component mounts based on resource type
+    // Load sample data when component mounts or resource type changes
     const sampleData = getSampleDataByResourceType(template.resourceType);
     setSampleJsonValue(JSON.stringify(sampleData, null, 2));
     setSampleData(sampleData);
-    
-    // Add default fields for new templates based on resource type
-    if (!templateId && template.fields.length === 0) {
+  }, [template.resourceType]);
+
+  // Separate effect for populating default fields on initial load
+  useEffect(() => {
+    // Only add default fields for new templates (not loading existing ones)
+    if (!templateId && template.fields.length === 0 && template.name === 'New Template') {
       const defaultFields = getDefaultFieldsForResourceType(template.resourceType);
       
-      setTemplate(prev => ({
-        ...prev,
-        fields: defaultFields
-      }));
+      if (defaultFields.length > 0) {
+        setTemplate(prev => ({
+          ...prev,
+          fields: defaultFields
+        }));
+      }
     }
-  }, [templateId, template.fields.length, template.resourceType]);
+  }, [templateId, template.resourceType]); // Removed template.fields.length to prevent loops
 
   const loadTemplate = (id: string) => {
     const stored = localStorage.getItem('fhir-templates');
@@ -195,6 +240,26 @@ const CreateTemplate: React.FC = () => {
       description,
       updatedAt: new Date().toISOString()
     }));
+  };
+
+  const handleResourceTypeChange = (newResourceType: FhirResourceType) => {
+    // Update template with new resource type and default fields
+    const defaultFields = getDefaultFieldsForResourceType(newResourceType);
+    const newSampleData = getSampleDataByResourceType(newResourceType);
+    
+    setTemplate(prev => ({
+      ...prev,
+      resourceType: newResourceType,
+      fields: defaultFields, // Replace existing fields with defaults for new resource type
+      updatedAt: new Date().toISOString()
+    }));
+
+    // Update sample data
+    setSampleJsonValue(JSON.stringify(newSampleData, null, 2));
+    setSampleData(newSampleData);
+    
+    // Clear any selected field since we're changing the template structure
+    setSelectedField(null);
   };
 
   const handleSampleJsonChange = (value: string) => {
@@ -257,9 +322,7 @@ const CreateTemplate: React.FC = () => {
     setSelectedField(null);
   };
 
-  const handlePreview = () => {
-    setShowPreview(true);
-  };
+
 
   return (
     <div className="h-screen flex flex-col">
@@ -282,9 +345,16 @@ const CreateTemplate: React.FC = () => {
                   className="text-xl font-semibold text-gray-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
                   placeholder="Template name..."
                 />
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {template.resourceType}
-                </span>
+                <select
+                  value={template.resourceType}
+                  onChange={(e) => handleResourceTypeChange(e.target.value as FhirResourceType)}
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Patient">Patient</option>
+                  <option value="HumanName">HumanName</option>
+                  <option value="ContactPoint">ContactPoint</option>
+                  <option value="Address">Address</option>
+                </select>
               </div>
               <input
                 type="text"
@@ -300,7 +370,6 @@ const CreateTemplate: React.FC = () => {
             onSave={handleSave}
             onExport={handleExport}
             onImport={handleImport}
-            onPreview={handlePreview}
           />
         </div>
       </div>
@@ -352,6 +421,7 @@ const CreateTemplate: React.FC = () => {
 
         {/* Right Sidebar - Sample Data & Preview */}
         <div 
+          ref={rightPanelRef}
           className="bg-white border-l border-gray-200 flex flex-col"
           style={{ 
             width: `${rightPanelWidth}px`,
@@ -359,50 +429,50 @@ const CreateTemplate: React.FC = () => {
             maxWidth: '800px'
           }}
         >
-          <div className="border-b border-gray-200">
-            <div className="flex">
-              <button
-                className={`flex-1 px-4 py-3 text-sm font-medium ${
-                  !showPreview
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-                onClick={() => setShowPreview(false)}
-              >
-                Sample Data
-              </button>
-              <button
-                className={`flex-1 px-4 py-3 text-sm font-medium ${
-                  showPreview
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-                onClick={() => setShowPreview(true)}
-              >
-                Live Preview
-              </button>
-              {/* Panel resize shortcuts indicator */}
-              <div 
-                className="px-2 py-3 text-xs text-gray-400 flex items-center"
-                title="Keyboard shortcuts: Ctrl+[ to shrink, Ctrl+] to expand, Ctrl+0 to reset"
-              >
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-              </div>
+          {/* Sample Data Panel (Top) */}
+          <div 
+            className="border-b border-gray-200 flex flex-col"
+            style={{ height: `${sampleDataHeight}px` }}
+          >
+            <div className="px-4 py-3 text-sm font-medium text-gray-900 border-b border-gray-100 bg-gray-50">
+              Sample Data
             </div>
-          </div>
-
-          <div className="flex-1 overflow-hidden">
-            {showPreview ? (
-              <LivePreview template={template} sampleData={sampleData} />
-            ) : (
+            <div className="flex-1 overflow-hidden">
               <SampleJsonInput
                 value={sampleJsonValue}
                 onChange={handleSampleJsonChange}
                 resourceType={template.resourceType}
               />
-            )}
+            </div>
+          </div>
+
+          {/* Vertical Resize Handle */}
+          <div 
+            className="h-1 bg-gray-200 cursor-row-resize hover:bg-blue-500 transition-colors relative group"
+            onMouseDown={handleVerticalMouseDown}
+          >
+            <div className="absolute inset-x-0 -top-1 -bottom-1" />
+            {/* Visual indicator */}
+            <div className="h-0.5 bg-gray-400 group-hover:bg-blue-600 transition-colors mx-auto" style={{ width: '20px', marginTop: '1px' }} />
+          </div>
+
+          {/* Live Preview Panel (Bottom) */}
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="px-4 py-3 text-sm font-medium text-gray-900 border-b border-gray-100 bg-gray-50">
+              Live Preview
+              {/* Panel resize shortcuts indicator */}
+              <span 
+                className="float-right text-xs text-gray-400"
+                title="Keyboard shortcuts: Ctrl+[ to shrink, Ctrl+] to expand, Ctrl+0 to reset"
+              >
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </span>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <LivePreview template={template} sampleData={sampleData} />
+            </div>
           </div>
         </div>
       </div>

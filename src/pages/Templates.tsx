@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { Template, FhirResourceType } from '../shared/types';
+import { getDefaultFieldsForResourceType } from '../shared/defaultFields';
+import { getSampleDataByResourceType } from '../shared/sampleData';
 
 const Templates: React.FC = () => {
   const navigate = useNavigate();
@@ -67,6 +69,58 @@ const Templates: React.FC = () => {
     // Navigate to create page with resource type parameter
     navigate(`/create?resourceType=${selectedResourceType}`);
     setShowCreateModal(false);
+  };
+
+  const generateSampleTemplates = () => {
+    if (!window.confirm('This will create sample templates for Patient, HumanName, ContactPoint, and Address resources. Continue?')) {
+      return;
+    }
+
+    const resourceTypes: FhirResourceType[] = ['Patient', 'HumanName', 'ContactPoint', 'Address'];
+    const newTemplates: Template[] = [];
+    
+    resourceTypes.forEach(resourceType => {
+      // Skip if a sample template for this resource type already exists
+      const existingSample = templates.find(t => 
+        t.resourceType === resourceType && 
+        t.name.toLowerCase().includes('sample')
+      );
+      
+      if (existingSample) {
+        return; // Skip this resource type
+      }
+      
+      const defaultFields = getDefaultFieldsForResourceType(resourceType);
+      const sampleData = getSampleDataByResourceType(resourceType);
+      
+      const template: Template = {
+        id: `sample-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${resourceType}`,
+        name: `Sample ${resourceType} Template`,
+        description: `Default template for ${resourceType} resource with common fields and sample data`,
+        resourceType,
+        fields: defaultFields,
+        sampleData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        version: '1.0.0'
+      };
+      
+      newTemplates.push(template);
+    });
+    
+    if (newTemplates.length === 0) {
+      alert('Sample templates for all resource types already exist!');
+      return;
+    }
+    
+    // Add all new templates to existing ones
+    const updatedTemplates = [...templates, ...newTemplates];
+    setTemplates(updatedTemplates);
+    localStorage.setItem('fhir-templates', JSON.stringify({ templates: updatedTemplates }));
+    
+    // Show success message
+    const resourceNames = newTemplates.map(t => t.resourceType).join(', ');
+    alert(`Successfully generated ${newTemplates.length} sample templates for: ${resourceNames}`);
   };
 
   const importTemplate = () => {
@@ -169,15 +223,18 @@ const Templates: React.FC = () => {
           </svg>
           <h3 className="mt-2 text-sm font-medium text-gray-900">No templates</h3>
           <p className="mt-1 text-sm text-gray-500">
-            Get started by creating your first FHIR template.
+            Get started by creating your first FHIR template or generate sample templates.
           </p>
-          <div className="mt-6">
-            <Link
-              to="/create"
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={generateSampleTemplates}
+              className="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
             >
-              Create New Template
-            </Link>
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Generate Sample Templates
+            </button>
           </div>
         </div>
       ) : (
