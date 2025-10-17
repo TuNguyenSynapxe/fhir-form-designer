@@ -587,7 +587,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 bg-white design-canvas-scroll">
+      <div className="flex-1 overflow-y-auto p-6 pb-8 bg-white design-canvas-scroll">
         {!sampleData ? (
           <div className="text-center py-8">
             <svg

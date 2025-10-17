@@ -673,7 +673,7 @@ const DesignCanvas: React.FC<DesignCanvasProps> = ({
       
       <div
         ref={scrollContainerRef}
-        className="flex-1 p-6 overflow-y-auto design-canvas-scroll"
+        className="flex-1 p-6 pb-8 overflow-y-auto design-canvas-scroll"
         onDragOver={handleDragOver}
         style={{ 
           scrollbarWidth: 'auto',

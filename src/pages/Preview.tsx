@@ -91,6 +91,7 @@ const Preview: React.FC = () => {
   };
 
   const [template, setTemplate] = useState<Template | null>(null);
+  const [templatesOfSameType, setTemplatesOfSameType] = useState<Template[]>([]);
   const [sampleData, setSampleData] = useState<FhirResource | null>(null);
   const [jsonInput, setJsonInput] = useState('');
   const [error, setError] = useState<string>('');
@@ -115,9 +116,17 @@ const Preview: React.FC = () => {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        const foundTemplate = parsed.templates?.find((t: Template) => t.id === id);
+        const allTemplates = parsed.templates || [];
+        const foundTemplate = allTemplates.find((t: Template) => t.id === id);
+        
         if (foundTemplate) {
           setTemplate(foundTemplate);
+          
+          // Load all templates of the same resource type
+          const sameTypeTemplates = allTemplates.filter((t: Template) => 
+            t.resourceType === foundTemplate.resourceType
+          );
+          setTemplatesOfSameType(sameTypeTemplates);
         } else {
           setError('Template not found');
         }
@@ -128,6 +137,16 @@ const Preview: React.FC = () => {
     } else {
       setError('No templates found');
     }
+  };
+
+  const handleTemplateSwitch = (newTemplateId: string) => {
+    // Update the URL to reflect the new template
+    const url = new URL(window.location.href);
+    url.searchParams.set('template', newTemplateId);
+    window.history.pushState({}, '', url.toString());
+    
+    // Load the new template
+    loadTemplate(newTemplateId);
   };
 
   const handleJsonChange = (value: string) => {
@@ -671,9 +690,9 @@ const Preview: React.FC = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
@@ -686,12 +705,24 @@ const Preview: React.FC = () => {
               <h1 className="text-xl font-semibold text-gray-900">
                 Preview: {template.name}
               </h1>
-              {template.description && (
-                <p className="text-sm text-gray-600">{template.description}</p>
-              )}
+              <div className="flex items-center space-x-3 mt-1">
+                {template.description && (
+                  <p className="text-sm text-gray-600">{template.description}</p>
+                )}
+                <div className="flex items-center space-x-2">
+                  <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                    {template.resourceType}
+                  </span>
+                  {templatesOfSameType.length > 1 && (
+                    <span className="text-xs text-gray-500">
+                      {templatesOfSameType.length} templates available
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex items-center space-x-3">
             <button
               onClick={() => navigate(`/create?template=${template.id}`)}
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -703,7 +734,7 @@ const Preview: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex" style={{ minHeight: 'calc(100vh - 140px)' }}>
         {/* Left Side - JSON Input */}
         <div className="w-1/2 bg-gray-50 border-r border-gray-200">
           <div className="p-4 border-b border-gray-200">
@@ -712,73 +743,108 @@ const Preview: React.FC = () => {
               Modify the JSON below to see how the template renders different data
             </p>
           </div>
-          <div className="p-4 h-full">
+          <div className="p-4" style={{ height: 'calc(100vh - 140px)' }}>
             <textarea
               value={jsonInput}
               onChange={(e) => handleJsonChange(e.target.value)}
-              className="w-full h-full font-mono text-sm border border-gray-300 rounded p-3 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full font-mono text-sm border border-gray-300 rounded p-3 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              style={{ height: 'calc(100% - 48px)' }}
               placeholder="Enter FHIR Patient JSON..."
             />
+            {error && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
           </div>
-          {error && (
-            <div className="p-4 bg-red-50 border-t border-red-200">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
         </div>
 
         {/* Right Side - Rendered Template */}
         <div className="w-1/2 bg-white">
           <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Rendered Template</h2>
-            <p className="text-sm text-gray-600">
-              Live preview of how the template displays the FHIR data
-            </p>
-          </div>
-          <div className="p-6 overflow-y-auto h-full">
-            {template.fields.length === 0 ? (
-              <div className="text-center text-gray-500 py-12">
-                <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No fields</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  This template doesn't have any fields yet.
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h2 className="text-lg font-medium text-gray-900">Rendered Template</h2>
+                <p className="text-sm text-gray-600">
+                  Live preview of how the template displays the FHIR data
                 </p>
               </div>
-            ) : (
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-                {/* Template Header */}
-                <div className="px-6 py-4 bg-blue-50 border-b border-blue-100 rounded-t-lg">
-                  <h3 className="text-2xl font-bold text-blue-900 flex items-center">
-                    <span className="mr-3">{getResourceIcon(template.resourceType)}</span>
-                    {template.name}
-                  </h3>
-                  {template.description && (
-                    <p className="mt-2 text-blue-700">{template.description}</p>
-                  )}
+              
+              {/* Template Selector in Panel */}
+              {templatesOfSameType.length > 1 && (
+                <div className="ml-4 min-w-0 flex-shrink-0 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                  <label className="block text-xs text-blue-700 font-medium mb-2 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    Switch Template ({templatesOfSameType.length} available):
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={template.id}
+                      onChange={(e) => handleTemplateSwitch(e.target.value)}
+                      className="appearance-none px-3 py-2 pr-8 border border-blue-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white cursor-pointer hover:border-blue-400 transition-colors min-w-52 shadow-sm"
+                    >
+                      {templatesOfSameType.map((tmpl) => (
+                        <option key={tmpl.id} value={tmpl.id}>
+                          {tmpl.name} {tmpl.description && `- ${tmpl.description.substring(0, 25)}${tmpl.description.length > 25 ? '...' : ''}`}
+                        </option>
+                      ))}
+                    </select>
+                    <svg className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
-                
-                {/* Patient Information Content */}
-                <div className="p-6">
-                  <dl className="space-y-0">
-                    {template.fields
-                      .sort((a, b) => a.order - b.order)
-                      .map((field) => renderField(field))}
-                  </dl>
+              )}
+            </div>
+          </div>
+          <div className="overflow-y-auto preview-scroll" style={{ height: 'calc(100vh - 140px)', paddingBottom: '48px' }}>
+            <div className="p-6">
+              {template.fields.length === 0 ? (
+                <div className="text-center text-gray-500 py-12">
+                  <svg
+                    className="mx-auto h-12 w-12 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No fields</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    This template doesn't have any fields yet.
+                  </p>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-8">
+                  {/* Template Header */}
+                  <div className="px-6 py-4 bg-blue-50 border-b border-blue-100 rounded-t-lg">
+                    <h3 className="text-2xl font-bold text-blue-900 flex items-center">
+                      <span className="mr-3">{getResourceIcon(template.resourceType)}</span>
+                      {template.name}
+                    </h3>
+                    {template.description && (
+                      <p className="mt-2 text-blue-700">{template.description}</p>
+                    )}
+                  </div>
+                  
+                  {/* Template Information Content */}
+                  <div className="p-6">
+                    <dl className="space-y-0">
+                      {template.fields
+                        .sort((a, b) => a.order - b.order)
+                        .map((field) => renderField(field))}
+                    </dl>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
