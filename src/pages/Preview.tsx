@@ -94,7 +94,8 @@ const Preview: React.FC = () => {
   const [templatesOfSameType, setTemplatesOfSameType] = useState<Template[]>([]);
   const [sampleData, setSampleData] = useState<FhirResource | null>(null);
   const [jsonInput, setJsonInput] = useState('');
-  const [error, setError] = useState<string>('');
+  const [templateError, setTemplateError] = useState<string>('');
+  const [jsonError, setJsonError] = useState<string>('');
 
   useEffect(() => {
     if (templateId) {
@@ -128,14 +129,14 @@ const Preview: React.FC = () => {
           );
           setTemplatesOfSameType(sameTypeTemplates);
         } else {
-          setError('Template not found');
+          setTemplateError('Template not found');
         }
       } catch (error) {
         console.error('Failed to load template:', error);
-        setError('Failed to load template');
+        setTemplateError('Failed to load template');
       }
     } else {
-      setError('No templates found');
+      setTemplateError('No templates found');
     }
   };
 
@@ -151,20 +152,40 @@ const Preview: React.FC = () => {
 
   const handleJsonChange = (value: string) => {
     setJsonInput(value);
-    setError('');
+    setJsonError('');
     
     try {
       const parsed = JSON.parse(value);
       if (template && parsed.resourceType !== template.resourceType) {
-        setError(`Invalid resource type. Expected "${template.resourceType}", got "${parsed.resourceType || 'undefined'}".`);
+        setJsonError(`Invalid resource type. Expected "${template.resourceType}", got "${parsed.resourceType || 'undefined'}".`);
         return;
       }
       setSampleData(parsed);
     } catch (err) {
-      setError('Invalid JSON format');
+      setJsonError('Invalid JSON format');
       setSampleData(null);
     }
   };
+
+  const formatJson = () => {
+    try {
+      const parsed = JSON.parse(jsonInput);
+      const formatted = JSON.stringify(parsed, null, 2);
+      setJsonInput(formatted);
+      setJsonError('');
+      setSampleData(parsed);
+    } catch (err) {
+      setJsonError('Cannot format invalid JSON');
+    }
+  };
+
+  const clearJson = () => {
+    setJsonInput('');
+    setJsonError('');
+    setSampleData(null);
+  };
+
+
 
   const getFieldValue = (fhirPath: string, data: FhirResource): any => {
     if (!fhirPath || !data) return '';
@@ -661,12 +682,12 @@ const Preview: React.FC = () => {
     }
   };
 
-  if (error) {
+  if (templateError) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <h3 className="text-lg font-medium text-red-800">Error</h3>
-          <p className="mt-2 text-sm text-red-700">{error}</p>
+          <p className="mt-2 text-sm text-red-700">{templateError}</p>
           <button
             onClick={() => navigate('/')}
             className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
@@ -737,25 +758,51 @@ const Preview: React.FC = () => {
       <div className="flex-1 flex" style={{ minHeight: 'calc(100vh - 140px)' }}>
         {/* Left Side - JSON Input */}
         <div className="w-1/2 bg-gray-50 border-r border-gray-200">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Sample FHIR Data</h2>
-            <p className="text-sm text-gray-600">
-              Modify the JSON below to see how the template renders different data
-            </p>
+          <div className={`p-4 border-b ${jsonError ? 'border-red-200 bg-red-50' : 'border-gray-200'}`}>
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h2 className={`text-lg font-medium ${jsonError ? 'text-red-900' : 'text-gray-900'}`}>Sample FHIR Data</h2>
+                {jsonError ? (
+                  <p className="text-sm text-red-600 font-medium">
+                    {jsonError}
+                  </p>
+                ) : (
+                  <p className="text-sm text-gray-600">
+                    Modify the JSON below to see how the template renders different data
+                  </p>
+                )}
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={formatJson}
+                  className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+                  title="Format JSON"
+                >
+                  Format
+                </button>
+                <button
+                  onClick={clearJson}
+                  className="px-3 py-1 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded hover:bg-gray-100 transition-colors"
+                  title="Clear JSON"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
           </div>
           <div className="p-4" style={{ height: 'calc(100vh - 140px)' }}>
             <textarea
               value={jsonInput}
               onChange={(e) => handleJsonChange(e.target.value)}
-              className="w-full font-mono text-sm border border-gray-300 rounded p-3 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full font-mono text-sm border rounded p-3 resize-none focus:ring-2 focus:border-transparent ${
+                jsonError 
+                  ? 'border-red-300 focus:ring-red-500' 
+                  : 'border-gray-300 focus:ring-blue-500'
+              }`}
               style={{ height: 'calc(100% - 48px)' }}
               placeholder="Enter FHIR Patient JSON..."
+              spellCheck={false}
             />
-            {error && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded">
-                <p className="text-sm text-red-600">{error}</p>
-              </div>
-            )}
           </div>
         </div>
 
@@ -801,7 +848,27 @@ const Preview: React.FC = () => {
           </div>
           <div className="overflow-y-auto preview-scroll" style={{ height: 'calc(100vh - 140px)', paddingBottom: '48px' }}>
             <div className="p-6">
-              {template.fields.length === 0 ? (
+              {!sampleData ? (
+                <div className="text-center text-gray-500 py-12">
+                  <svg
+                    className="mx-auto h-12 w-12 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No sample data</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Provide sample FHIR data to see the preview.
+                  </p>
+                </div>
+              ) : template.fields.length === 0 ? (
                 <div className="text-center text-gray-500 py-12">
                   <svg
                     className="mx-auto h-12 w-12 text-gray-400"

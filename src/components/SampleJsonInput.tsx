@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { SampleJsonInputProps, FhirPatient } from '../shared/types';
+import type { SampleJsonInputProps } from '../shared/types';
 
 const SampleJsonInput: React.FC<SampleJsonInputProps> = ({
   value,
@@ -42,82 +42,7 @@ const SampleJsonInput: React.FC<SampleJsonInputProps> = ({
     onChange(newValue);
   };
 
-  const loadSampleData = () => {
-    const samplePatient: FhirPatient = {
-      resourceType: "Patient",
-      id: "sample-patient",
-      active: true,
-      name: [
-        {
-          use: "official",
-          family: "Johnson",
-          given: ["Alice", "Marie"],
-          prefix: ["Mrs."]
-        }
-      ],
-      telecom: [
-        {
-          system: "phone",
-          value: "+1-555-234-5678",
-          use: "home"
-        },
-        {
-          system: "email",
-          value: "alice.johnson@example.com",
-          use: "home"
-        }
-      ],
-      gender: "female",
-      birthDate: "1990-12-05",
-      address: [
-        {
-          use: "home",
-          type: "both",
-          line: ["789 Pine Street"],
-          city: "Denver",
-          state: "CO",
-          postalCode: "80201",
-          country: "USA"
-        }
-      ],
-      maritalStatus: {
-        coding: [
-          {
-            system: "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
-            code: "M",
-            display: "Married"
-          }
-        ]
-      },
-      contact: [
-        {
-          relationship: [
-            {
-              coding: [
-                {
-                  system: "http://terminology.hl7.org/CodeSystem/v2-0131",
-                  code: "C",
-                  display: "Emergency Contact"
-                }
-              ]
-            }
-          ],
-          name: {
-            family: "Johnson",
-            given: ["Bob"]
-          },
-          telecom: [
-            {
-              system: "phone",
-              value: "+1-555-234-9999"
-            }
-          ]
-        }
-      ]
-    };
 
-    onChange(JSON.stringify(samplePatient, null, 2));
-  };
 
   const formatJson = () => {
     try {
@@ -140,12 +65,6 @@ const SampleJsonInput: React.FC<SampleJsonInputProps> = ({
             Sample {resourceType} Data
           </h3>
           <div className="flex space-x-2">
-            <button
-              onClick={loadSampleData}
-              className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
-            >
-              Load Sample
-            </button>
             <button
               onClick={formatJson}
               className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700"

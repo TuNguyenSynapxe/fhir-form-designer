@@ -653,7 +653,7 @@ const DesignCanvas: React.FC<DesignCanvasProps> = ({
   const sortedFields = [...fields].sort((a, b) => a.order - b.order);
 
   return (
-    <div className="flex-1 bg-gray-50 flex flex-col relative">
+    <div className="flex-1 bg-gray-50 flex flex-col relative h-full">
       <div className="p-4 bg-white border-b border-gray-200 flex-shrink-0">
         <h2 className="text-lg font-medium text-gray-900">Design Canvas</h2>
         <p className="text-sm text-gray-600">
@@ -677,7 +677,8 @@ const DesignCanvas: React.FC<DesignCanvasProps> = ({
         onDragOver={handleDragOver}
         style={{ 
           scrollbarWidth: 'auto',
-          scrollbarColor: '#888 #f1f1f1'
+          scrollbarColor: '#888 #f1f1f1',
+          minHeight: 0
         }}
       >
         {fields.length === 0 ? (
