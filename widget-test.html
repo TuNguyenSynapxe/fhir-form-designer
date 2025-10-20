@@ -39,6 +39,136 @@
             border: 1px solid #ddd;
             border-radius: 4px;
         }
+        
+        /* New configuration styles */
+        .config-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .config-section h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 8px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+        .input-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            resize: vertical;
+        }
+        .button-row {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .button-row button {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .button-row button:hover {
+            background: #f0f0f0;
+        }
+        .primary-button {
+            background: #3b82f6 !important;
+            color: white !important;
+            font-weight: 500;
+        }
+        .primary-button:hover {
+            background: #2563eb !important;
+        }
+        .primary-button:disabled {
+            background: #9ca3af !important;
+            cursor: not-allowed;
+        }
+        .info-panel {
+            background: #e1f5fe;
+            border: 1px solid #81d4fa;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .info-panel h4 {
+            margin-top: 0;
+            color: #0277bd;
+        }
+        .data-config {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+        .data-source-controls {
+            margin-bottom: 15px;
+        }
+        .data-source-controls label {
+            margin-right: 15px;
+            font-weight: normal;
+        }
+        .data-source-controls input[type="radio"] {
+            margin-right: 5px;
+        }
+        .data-section {
+            margin-top: 15px;
+        }
+        .render-controls {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .render-controls button {
+            padding: 12px 25px;
+            margin: 0 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .status-message {
+            text-align: center;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .placeholder-message {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+        .placeholder-message h3 {
+            color: #4b5563;
+            margin-bottom: 10px;
+        }
         .widget-container {
             border: 2px dashed #ddd;
             border-radius: 8px;
@@ -63,26 +193,116 @@
     <div class="container">
         <h1>🧬 FHIR Widget Test</h1>
         <p>This page demonstrates the standalone FHIR Widget with base64 template support.</p>
+        
+        <!-- Quick Start Instructions -->
+        <div class="test-section" style="background: #e8f4fd; border-left: 4px solid #3b82f6;">
+            <h2>🚀 Quick Start Guide</h2>
+            <ol style="line-height: 1.8;">
+                <li><strong>Load Workspace:</strong> Paste your base64 workspace from FHIR Form Designer export, or click "Load Sample Workspace"</li>
+                <li><strong>Select Template:</strong> Choose from the available templates (auto-populated from your workspace)</li>
+                <li><strong>Configure Data:</strong> Use predefined sample data or enter custom FHIR JSON</li>
+                <li><strong>Choose Theme:</strong> Select Light, Dark, or High Contrast theme</li>
+                <li><strong>Render:</strong> Click "Render Widget" to see your template in action!</li>
+            </ol>
+        </div>
 
-        <!-- Theme Test Section -->
+        <!-- Interactive Widget Configuration -->
         <div class="test-section">
-            <h2>Theme Testing</h2>
-            <div class="controls">
-                <label for="theme-select">Theme:</label>
-                <select id="theme-select">
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                    <option value="high-contrast">High Contrast</option>
-                </select>
-                <label for="template-select">Template:</label>
-                <select id="template-select">
-                    <option value="Patient Summary">Patient Summary</option>
-                    <option value="Patient Demographics">Patient Demographics</option>
-                </select>
-                <button onclick="updateWidget()">Update Widget</button>
+            <h2>🔧 Interactive Widget Configuration</h2>
+            
+            <!-- Workspace Input Section -->
+            <div class="config-section">
+                <h3>1. Workspace Configuration</h3>
+                <div class="input-group">
+                    <label for="workspace-input">Base64 Workspace (from FHIR Form Designer Export):</label>
+                    <textarea 
+                        id="workspace-input" 
+                        placeholder="Paste your base64 workspace string here..."
+                        rows="4"
+                    ></textarea>
+                    <div class="button-row">
+                        <button onclick="loadSampleWorkspace()">Load Sample Workspace</button>
+                        <button onclick="parseWorkspace()">Parse Workspace</button>
+                        <button onclick="clearWorkspace()">Clear</button>
+                    </div>
+                </div>
+                
+                <!-- Workspace Info Display -->
+                <div id="workspace-info" class="info-panel" style="display: none;">
+                    <h4>📋 Workspace Information</h4>
+                    <div id="workspace-details"></div>
+                </div>
             </div>
+
+            <!-- Template Selection -->
+            <div class="config-section">
+                <h3>2. Template Selection</h3>
+                <div class="controls">
+                    <label for="template-select">Available Templates:</label>
+                    <select id="template-select" disabled>
+                        <option value="">Please load a workspace first</option>
+                    </select>
+                    <label for="theme-select">Theme:</label>
+                    <select id="theme-select">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="high-contrast">High Contrast</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Sample Data Configuration -->
+            <div class="config-section">
+                <h3>3. Sample FHIR Data</h3>
+                <div class="data-config">
+                    <div class="data-source-controls">
+                        <label>Data Source:</label>
+                        <label><input type="radio" name="data-source" value="predefined" checked onclick="switchDataSource()"> Predefined Sample</label>
+                        <label><input type="radio" name="data-source" value="custom" onclick="switchDataSource()"> Custom JSON</label>
+                    </div>
+                    
+                    <!-- Predefined Sample Selection -->
+                    <div id="predefined-data-section" class="data-section">
+                        <label for="resource-type-select">Resource Type:</label>
+                        <select id="resource-type-select" onchange="loadPredefinedSample()">
+                            <option value="Patient">Patient</option>
+                            <option value="HumanName">HumanName</option>
+                            <option value="ContactPoint">ContactPoint</option>
+                            <option value="Address">Address</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Custom Data Input -->
+                    <div id="custom-data-section" class="data-section" style="display: none;">
+                        <label for="custom-data-input">Custom FHIR JSON:</label>
+                        <textarea 
+                            id="custom-data-input" 
+                            placeholder="Enter your FHIR resource JSON here..."
+                            rows="8"
+                        ></textarea>
+                        <div class="button-row">
+                            <button onclick="validateCustomData()">Validate JSON</button>
+                            <button onclick="formatCustomData()">Format JSON</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Render Controls -->
+            <div class="config-section">
+                <div class="render-controls">
+                    <button onclick="renderWidget()" class="primary-button" disabled id="render-button">🚀 Render Widget</button>
+                    <button onclick="clearWidget()">Clear Widget</button>
+                </div>
+                <div id="render-status" class="status-message"></div>
+            </div>
+
+            <!-- Widget Display Area -->
             <div id="widget-demo" class="widget-container">
-                <!-- Widget will be rendered here -->
+                <div class="placeholder-message">
+                    <h3>👆 Configure your widget above and click "Render Widget"</h3>
+                    <p>Load a workspace, select a template, choose sample data, and render!</p>
+                </div>
             </div>
         </div>
 
@@ -159,6 +379,10 @@ npm install react react-dom
     <link rel="stylesheet" href="./dist-widget/fhir-widget.css">
 
     <script>
+        // Global state
+        let currentWorkspace = null;
+        let currentSampleData = null;
+        
         // Sample base64 encoded workspace (you would generate this from your FHIR Form Designer)
         const sampleTemplatesBase64 = btoa(JSON.stringify({
             id: "test-workspace",
@@ -189,87 +413,324 @@ npm install react react-dom
                         { id: "2", type: "text", label: "Email", fhirPath: "telecom.find(t => t.system === 'email').value", order: 2 },
                         { id: "3", type: "text", label: "Phone", fhirPath: "telecom.find(t => t.system === 'phone').value", order: 3 }
                     ]
+                },
+                {
+                    id: "human-name-1",
+                    name: "Full Name Display",
+                    description: "Human name formatting",
+                    resourceType: "HumanName",
+                    workspaceId: "test-workspace", 
+                    fields: [
+                        { id: "1", type: "text", label: "Given Name", fhirPath: "given[0]", order: 1 },
+                        { id: "2", type: "text", label: "Family Name", fhirPath: "family", order: 2 },
+                        { id: "3", type: "text", label: "Prefix", fhirPath: "prefix[0]", order: 3 }
+                    ]
+                },
+                {
+                    id: "contact-point-1", 
+                    name: "Contact Information",
+                    description: "Contact point details",
+                    resourceType: "ContactPoint",
+                    workspaceId: "test-workspace",
+                    fields: [
+                        { id: "1", type: "text", label: "System", fhirPath: "system", order: 1 },
+                        { id: "2", type: "text", label: "Value", fhirPath: "value", order: 2 },
+                        { id: "3", type: "text", label: "Use", fhirPath: "use", order: 3 }
+                    ]
                 }
             ]
         }));
 
-        // Sample FHIR Patient data
-        const samplePatientData = {
-            resourceType: "Patient",
-            id: "example-patient-1",
-            active: true,
-            name: [
-                {
-                    given: ["John", "Michael"],
-                    family: "Doe"
-                }
-            ],
-            telecom: [
-                {
-                    system: "email",
-                    value: "john.doe@example.com"
-                },
-                {
-                    system: "phone", 
-                    value: "+1-555-123-4567"
-                }
-            ],
-            gender: "male",
-            birthDate: "1985-06-15"
+        // Predefined sample data by resource type
+        const sampleData = {
+            Patient: {
+                resourceType: "Patient",
+                id: "example-patient-1",
+                active: true,
+                name: [
+                    {
+                        given: ["John", "Michael"],
+                        family: "Doe"
+                    }
+                ],
+                telecom: [
+                    {
+                        system: "email",
+                        value: "john.doe@example.com"
+                    },
+                    {
+                        system: "phone", 
+                        value: "+1-555-123-4567"
+                    }
+                ],
+                gender: "male",
+                birthDate: "1985-06-15"
+            },
+            HumanName: {
+                given: ["Jane", "Elizabeth"],
+                family: "Smith",
+                prefix: ["Dr."],
+                suffix: ["PhD"],
+                use: "official"
+            },
+            ContactPoint: {
+                system: "email",
+                value: "contact@example.com",
+                use: "work",
+                rank: 1
+            },
+            Address: {
+                use: "home",
+                type: "physical", 
+                line: ["123 Main Street", "Apt 4B"],
+                city: "Springfield",
+                state: "IL",
+                postalCode: "62701",
+                country: "US"
+            }
         };
 
-        // Function to update the main demo widget
-        function updateWidget() {
-            const theme = document.getElementById('theme-select').value;
+        // Initialize with Patient data
+        currentSampleData = sampleData.Patient;
+
+        // ============ NEW INTERACTIVE FUNCTIONS ============
+        
+        function loadSampleWorkspace() {
+            document.getElementById('workspace-input').value = sampleTemplatesBase64;
+            parseWorkspace();
+        }
+        
+        function parseWorkspace() {
+            const base64Input = document.getElementById('workspace-input').value.trim();
+            
+            if (!base64Input) {
+                showStatus('Please enter a workspace base64 string', 'error');
+                return;
+            }
+            
+            try {
+                // Decode the workspace
+                const decodedString = atob(base64Input);
+                currentWorkspace = JSON.parse(decodedString);
+                
+                // Validate workspace structure
+                if (!currentWorkspace.templates || !Array.isArray(currentWorkspace.templates)) {
+                    throw new Error('Invalid workspace format: missing templates array');
+                }
+                
+                // Display workspace info
+                displayWorkspaceInfo(currentWorkspace);
+                
+                // Populate template dropdown
+                populateTemplateDropdown(currentWorkspace.templates);
+                
+                // Enable render button
+                document.getElementById('render-button').disabled = false;
+                
+                showStatus(`✅ Loaded workspace with ${currentWorkspace.templates.length} templates`, 'success');
+                
+            } catch (error) {
+                showStatus(`❌ Failed to parse workspace: ${error.message}`, 'error');
+                console.error('Workspace parse error:', error);
+                currentWorkspace = null;
+                clearTemplateDropdown();
+            }
+        }
+        
+        function clearWorkspace() {
+            document.getElementById('workspace-input').value = '';
+            document.getElementById('workspace-info').style.display = 'none';
+            currentWorkspace = null;
+            clearTemplateDropdown();
+            document.getElementById('render-button').disabled = true;
+            showStatus('Workspace cleared', 'success');
+        }
+        
+        function displayWorkspaceInfo(workspace) {
+            const infoPanel = document.getElementById('workspace-info');
+            const detailsDiv = document.getElementById('workspace-details');
+            
+            detailsDiv.innerHTML = `
+                <p><strong>Name:</strong> ${workspace.name || 'Unnamed'}</p>
+                <p><strong>Description:</strong> ${workspace.description || 'No description'}</p>
+                <p><strong>Templates:</strong> ${workspace.templates.length}</p>
+                <div class="template-list">
+                    <strong>Available Templates:</strong>
+                    <ul>
+                        ${workspace.templates.map(t => 
+                            `<li>${t.name} (${t.resourceType}) - ${t.fields?.length || 0} fields</li>`
+                        ).join('')}
+                    </ul>
+                </div>
+            `;
+            
+            infoPanel.style.display = 'block';
+        }
+        
+        function populateTemplateDropdown(templates) {
+            const select = document.getElementById('template-select');
+            select.innerHTML = '<option value="">Select a template...</option>';
+            
+            templates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.name;
+                option.textContent = `${template.name} (${template.resourceType})`;
+                select.appendChild(option);
+            });
+            
+            select.disabled = false;
+        }
+        
+        function clearTemplateDropdown() {
+            const select = document.getElementById('template-select');
+            select.innerHTML = '<option value="">Please load a workspace first</option>';
+            select.disabled = true;
+        }
+        
+        function switchDataSource() {
+            const isCustom = document.querySelector('input[name="data-source"]:checked').value === 'custom';
+            const predefinedSection = document.getElementById('predefined-data-section');
+            const customSection = document.getElementById('custom-data-section');
+            
+            if (isCustom) {
+                predefinedSection.style.display = 'none';
+                customSection.style.display = 'block';
+                // Load current sample data into custom textarea
+                document.getElementById('custom-data-input').value = JSON.stringify(currentSampleData, null, 2);
+            } else {
+                predefinedSection.style.display = 'block';
+                customSection.style.display = 'none';
+                loadPredefinedSample();
+            }
+        }
+        
+        function loadPredefinedSample() {
+            const resourceType = document.getElementById('resource-type-select').value;
+            currentSampleData = sampleData[resourceType];
+            showStatus(`Loaded ${resourceType} sample data`, 'success');
+        }
+        
+        function validateCustomData() {
+            const input = document.getElementById('custom-data-input').value.trim();
+            
+            if (!input) {
+                showStatus('Please enter JSON data', 'error');
+                return false;
+            }
+            
+            try {
+                const parsed = JSON.parse(input);
+                currentSampleData = parsed;
+                showStatus('✅ JSON is valid', 'success');
+                return true;
+            } catch (error) {
+                showStatus(`❌ Invalid JSON: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        function formatCustomData() {
+            if (validateCustomData()) {
+                document.getElementById('custom-data-input').value = JSON.stringify(currentSampleData, null, 2);
+                showStatus('JSON formatted', 'success');
+            }
+        }
+        
+        function renderWidget() {
             const templateName = document.getElementById('template-select').value;
+            const theme = document.getElementById('theme-select').value;
+            
+            // Validate inputs
+            if (!currentWorkspace) {
+                showStatus('❌ Please load a workspace first', 'error');
+                return;
+            }
+            
+            if (!templateName) {
+                showStatus('❌ Please select a template', 'error');
+                return;
+            }
+            
+            // Check if using custom data and validate it
+            const isCustomData = document.querySelector('input[name="data-source"]:checked').value === 'custom';
+            if (isCustomData && !validateCustomData()) {
+                return;
+            }
+            
+            const base64Input = document.getElementById('workspace-input').value;
             
             try {
                 // Clear previous widget
-                document.getElementById('widget-demo').innerHTML = '';
+                clearWidget();
                 
                 // Render new widget
                 FhirWidget.render({
-                    templates: sampleTemplatesBase64,
+                    templates: base64Input,
                     templateName: templateName,
-                    data: samplePatientData,
+                    data: currentSampleData,
                     theme: theme,
                     showErrors: true
                 }, '#widget-demo');
                 
-                console.log('✅ Widget rendered successfully');
+                showStatus(`✅ Widget rendered: ${templateName} (${theme} theme)`, 'success');
+                console.log('✅ Widget rendered successfully', { templateName, theme, data: currentSampleData });
+                
             } catch (error) {
+                const errorMsg = `❌ Widget render failed: ${error.message}`;
+                showStatus(errorMsg, 'error');
                 document.getElementById('widget-demo').innerHTML = 
                     `<div class="error">Error: ${error.message}</div>`;
                 console.error('❌ Widget render error:', error);
             }
         }
+        
+        function clearWidget() {
+            document.getElementById('widget-demo').innerHTML = `
+                <div class="placeholder-message">
+                    <h3>👆 Configure your widget above and click "Render Widget"</h3>
+                    <p>Load a workspace, select a template, choose sample data, and render!</p>
+                </div>
+            `;
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('render-status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.style.display = 'block';
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
 
-        // Initialize widgets when page loads
+        // Initialize page when loaded
         window.addEventListener('load', function() {
-            console.log('🚀 Initializing FHIR Widgets...');
+            console.log('🚀 Initializing FHIR Widget Test Page...');
             
-            // Main demo widget
-            updateWidget();
+            // Initialize with sample data
+            loadPredefinedSample();
             
-            // Multiple widget instances
+            // Multiple widget instances (static examples)
             try {
                 FhirWidget.render({
                     templates: sampleTemplatesBase64,
                     templateName: "Patient Summary", 
-                    data: samplePatientData,
+                    data: sampleData.Patient,
                     theme: "light"
                 }, '#widget-light');
                 
                 FhirWidget.render({
                     templates: sampleTemplatesBase64,
                     templateName: "Patient Demographics",
-                    data: samplePatientData, 
+                    data: sampleData.Patient, 
                     theme: "dark"
                 }, '#widget-dark');
                 
-                console.log('✅ All widgets initialized successfully');
+                console.log('✅ Static widget examples initialized successfully');
             } catch (error) {
-                console.error('❌ Widget initialization error:', error);
+                console.error('❌ Static widget initialization error:', error);
             }
         });
     </script>
