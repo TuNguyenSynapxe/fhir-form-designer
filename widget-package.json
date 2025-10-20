@@ -1,0 +1,45 @@
+{
+  "name": "@fhir-form-designer/widget",
+  "version": "1.0.0",
+  "description": "Standalone FHIR template rendering widget",
+  "main": "fhir-widget.umd.js",
+  "module": "fhir-widget.es.js",
+  "types": "types/index.d.ts",
+  "files": [
+    "fhir-widget.umd.js",
+    "fhir-widget.es.js", 
+    "fhir-widget.css",
+    "types/"
+  ],
+  "exports": {
+    ".": {
+      "import": "./fhir-widget.es.js",
+      "require": "./fhir-widget.umd.js",
+      "types": "./types/index.d.ts"
+    },
+    "./style.css": "./fhir-widget.css"
+  },
+  "scripts": {
+    "build": "vite build --mode widget",
+    "preview": "vite preview"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "keywords": [
+    "fhir",
+    "widget",
+    "react",
+    "healthcare",
+    "template",
+    "visualization"
+  ],
+  "author": "FHIR Form Designer Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TuNguyenSynapxe/fhir-form-designer.git",
+    "directory": "widget"
+  }
+}

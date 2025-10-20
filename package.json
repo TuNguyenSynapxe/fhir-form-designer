@@ -6,9 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:widget": "vite build --mode widget",
+    "build:all": "npm run build && npm run build:widget",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "node start.js"
+    "start": "node start.js",
+    "test:widget": "npm run build:widget && serve . -p 8080"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

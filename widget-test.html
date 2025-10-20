@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FHIR Widget Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        .controls label {
+            display: inline-block;
+            margin-right: 10px;
+            font-weight: 500;
+        }
+        .controls select, .controls button {
+            margin-right: 10px;
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .widget-container {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 200px;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+        h1, h2 { color: #333; }
+        .error { color: #dc3545; }
+        .success { color: #28a745; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧬 FHIR Widget Test</h1>
+        <p>This page demonstrates the standalone FHIR Widget with base64 template support.</p>
+
+        <!-- Theme Test Section -->
+        <div class="test-section">
+            <h2>Theme Testing</h2>
+            <div class="controls">
+                <label for="theme-select">Theme:</label>
+                <select id="theme-select">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="high-contrast">High Contrast</option>
+                </select>
+                <label for="template-select">Template:</label>
+                <select id="template-select">
+                    <option value="Patient Summary">Patient Summary</option>
+                    <option value="Patient Demographics">Patient Demographics</option>
+                </select>
+                <button onclick="updateWidget()">Update Widget</button>
+            </div>
+            <div id="widget-demo" class="widget-container">
+                <!-- Widget will be rendered here -->
+            </div>
+        </div>
+
+        <!-- Multiple Widgets Section -->
+        <div class="test-section">
+            <h2>Multiple Widget Instances</h2>
+            <p>Demonstrating multiple widgets with different templates and themes:</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h3>Light Theme</h3>
+                    <div id="widget-light" class="widget-container"></div>
+                </div>
+                <div>
+                    <h3>Dark Theme</h3>
+                    <div id="widget-dark" class="widget-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Integration Code Examples -->
+        <div class="test-section">
+            <h2>Integration Examples</h2>
+            
+            <h3>Vanilla JavaScript</h3>
+            <div class="code-block">
+&lt;script src="https://unpkg.com/react@19/umd/react.production.min.js"&gt;&lt;/script&gt;
+&lt;script src="https://unpkg.com/react-dom@19/umd/react-dom.production.min.js"&gt;&lt;/script&gt;
+&lt;script src="./fhir-widget.umd.js"&gt;&lt;/script&gt;
+&lt;link rel="stylesheet" href="./fhir-widget.css"&gt;
+
+&lt;script&gt;
+FhirWidget.render({
+    templates: "eyJ0ZW1wbGF0ZXMiOlt7ImlkIjoiMSIsIm5hbWUi...", // Base64 workspace
+    templateName: "Patient Summary",
+    data: { resourceType: "Patient", name: [{ given: ["John"], family: "Doe" }] },
+    theme: "light"
+}, "#patient-display");
+&lt;/script&gt;
+            </div>
+
+            <h3>React Component</h3>
+            <div class="code-block">
+import { FhirWidget } from '@fhir-form-designer/widget';
+
+function MyComponent() {
+    return (
+        &lt;FhirWidget 
+            templates="eyJ0ZW1wbGF0ZXMiOlt7ImlkIjoiMSIsIm5hbWUi..."
+            templateName="Patient Summary"
+            data={patientData}
+            theme="light"
+        /&gt;
+    );
+}
+            </div>
+
+            <h3>NPM Installation</h3>
+            <div class="code-block">
+# Install the widget package
+npm install @fhir-form-designer/widget
+
+# Peer dependencies (if not already installed)
+npm install react react-dom
+            </div>
+        </div>
+    </div>
+
+    <!-- Load React and ReactDOM from CDN -->
+    <script crossorigin src="https://unpkg.com/react@19/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@19/umd/react-dom.production.min.js"></script>
+    
+    <!-- Load the FHIR Widget (this will be built) -->
+    <script src="./dist-widget/fhir-widget.umd.js"></script>
+    <link rel="stylesheet" href="./dist-widget/fhir-widget.css">
+
+    <script>
+        // Sample base64 encoded workspace (you would generate this from your FHIR Form Designer)
+        const sampleTemplatesBase64 = btoa(JSON.stringify({
+            id: "test-workspace",
+            name: "Test Workspace",
+            description: "Sample workspace for testing",
+            templates: [
+                {
+                    id: "patient-summary-1",
+                    name: "Patient Summary", 
+                    description: "Basic patient information",
+                    resourceType: "Patient",
+                    workspaceId: "test-workspace",
+                    fields: [
+                        { id: "1", type: "text", label: "First Name", fhirPath: "name[0].given[0]", order: 1, required: true },
+                        { id: "2", type: "text", label: "Last Name", fhirPath: "name[0].family", order: 2, required: true },
+                        { id: "3", type: "text", label: "Gender", fhirPath: "gender", order: 3 },
+                        { id: "4", type: "date", label: "Birth Date", fhirPath: "birthDate", order: 4 }
+                    ]
+                },
+                {
+                    id: "patient-demo-1",
+                    name: "Patient Demographics",
+                    description: "Detailed demographics",
+                    resourceType: "Patient", 
+                    workspaceId: "test-workspace",
+                    fields: [
+                        { id: "1", type: "text", label: "Full Name", fhirPath: "name[0].given[0]", order: 1 },
+                        { id: "2", type: "text", label: "Email", fhirPath: "telecom.find(t => t.system === 'email').value", order: 2 },
+                        { id: "3", type: "text", label: "Phone", fhirPath: "telecom.find(t => t.system === 'phone').value", order: 3 }
+                    ]
+                }
+            ]
+        }));
+
+        // Sample FHIR Patient data
+        const samplePatientData = {
+            resourceType: "Patient",
+            id: "example-patient-1",
+            active: true,
+            name: [
+                {
+                    given: ["John", "Michael"],
+                    family: "Doe"
+                }
+            ],
+            telecom: [
+                {
+                    system: "email",
+                    value: "john.doe@example.com"
+                },
+                {
+                    system: "phone", 
+                    value: "+1-555-123-4567"
+                }
+            ],
+            gender: "male",
+            birthDate: "1985-06-15"
+        };
+
+        // Function to update the main demo widget
+        function updateWidget() {
+            const theme = document.getElementById('theme-select').value;
+            const templateName = document.getElementById('template-select').value;
+            
+            try {
+                // Clear previous widget
+                document.getElementById('widget-demo').innerHTML = '';
+                
+                // Render new widget
+                FhirWidget.render({
+                    templates: sampleTemplatesBase64,
+                    templateName: templateName,
+                    data: samplePatientData,
+                    theme: theme,
+                    showErrors: true
+                }, '#widget-demo');
+                
+                console.log('✅ Widget rendered successfully');
+            } catch (error) {
+                document.getElementById('widget-demo').innerHTML = 
+                    `<div class="error">Error: ${error.message}</div>`;
+                console.error('❌ Widget render error:', error);
+            }
+        }
+
+        // Initialize widgets when page loads
+        window.addEventListener('load', function() {
+            console.log('🚀 Initializing FHIR Widgets...');
+            
+            // Main demo widget
+            updateWidget();
+            
+            // Multiple widget instances
+            try {
+                FhirWidget.render({
+                    templates: sampleTemplatesBase64,
+                    templateName: "Patient Summary", 
+                    data: samplePatientData,
+                    theme: "light"
+                }, '#widget-light');
+                
+                FhirWidget.render({
+                    templates: sampleTemplatesBase64,
+                    templateName: "Patient Demographics",
+                    data: samplePatientData, 
+                    theme: "dark"
+                }, '#widget-dark');
+                
+                console.log('✅ All widgets initialized successfully');
+            } catch (error) {
+                console.error('❌ Widget initialization error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
