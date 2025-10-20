@@ -3,7 +3,7 @@ var U = typeof globalThis < "u" ? globalThis : typeof window < "u" ? window : ty
 function ze(u) {
   return u && u.__esModule && Object.prototype.hasOwnProperty.call(u, "default") ? u.default : u;
 }
-var G = { exports: {} }, M = {};
+var Y = { exports: {} }, M = {};
 /**
  * @license React
  * react-jsx-runtime.production.js
@@ -18,7 +18,7 @@ function De() {
   if (se) return M;
   se = 1;
   var u = Symbol.for("react.transitional.element"), s = Symbol.for("react.fragment");
-  function a(g, m, h) {
+  function a(f, m, h) {
     var b = null;
     if (h !== void 0 && (b = "" + h), m.key !== void 0 && (b = "" + m.key), "key" in m) {
       h = {};
@@ -27,7 +27,7 @@ function De() {
     } else h = m;
     return m = h.ref, {
       $$typeof: u,
-      type: g,
+      type: f,
       key: b,
       ref: m !== void 0 ? m : null,
       props: h
@@ -37,7 +37,7 @@ function De() {
 }
 var ne;
 function Me() {
-  return ne || (ne = 1, G.exports = De()), G.exports;
+  return ne || (ne = 1, Y.exports = De()), Y.exports;
 }
 var r = Me();
 function He(u) {
@@ -60,15 +60,15 @@ function We(u, s) {
   const a = s.resourceType;
   return u.resourceType && a && u.resourceType !== a ? (console.warn(`Template resourceType "${u.resourceType}" doesn't match data resourceType "${a}"`), !1) : !0;
 }
-var Y, ae;
+var X, ae;
 function qe() {
-  if (ae) return Y;
+  if (ae) return X;
   ae = 1;
-  var u = "Expected a function", s = "__lodash_hash_undefined__", a = "[object Function]", g = "[object GeneratorFunction]", m = "[object Symbol]", h = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\\]|\\.)*?\1)\]/, b = /^\w*$/, j = /^\./, $ = /[^.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(?:\.|\[\])(?:\.|\[\]|$))/g, C = /[\\^$.*+?()[\]{}|]/g, e = /\\(\\)?/g, o = /^\[object .+?Constructor\]$/, i = typeof U == "object" && U && U.Object === Object && U, d = typeof self == "object" && self && self.Object === Object && self, c = i || d || Function("return this")();
-  function f(t, n) {
+  var u = "Expected a function", s = "__lodash_hash_undefined__", a = "[object Function]", f = "[object GeneratorFunction]", m = "[object Symbol]", h = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\\]|\\.)*?\1)\]/, b = /^\w*$/, j = /^\./, $ = /[^.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(?:\.|\[\])(?:\.|\[\]|$))/g, E = /[\\^$.*+?()[\]{}|]/g, e = /\\(\\)?/g, o = /^\[object .+?Constructor\]$/, i = typeof U == "object" && U && U.Object === Object && U, d = typeof self == "object" && self && self.Object === Object && self, c = i || d || Function("return this")();
+  function x(t, n) {
     return t?.[n];
   }
-  function x(t) {
+  function g(t) {
     var n = !1;
     if (t != null && typeof t.toString != "function")
       try {
@@ -77,11 +77,11 @@ function qe() {
       }
     return n;
   }
-  var v = Array.prototype, N = Function.prototype, E = Object.prototype, F = c["__core-js_shared__"], _ = (function() {
+  var v = Array.prototype, N = Function.prototype, C = Object.prototype, F = c["__core-js_shared__"], _ = (function() {
     var t = /[^.]+$/.exec(F && F.keys && F.keys.IE_PROTO || "");
     return t ? "Symbol(src)_1." + t : "";
-  })(), S = N.toString, L = E.hasOwnProperty, A = E.toString, p = RegExp(
-    "^" + S.call(L).replace(C, "\\$&").replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, "$1.*?") + "$"
+  })(), S = N.toString, L = C.hasOwnProperty, A = C.toString, p = RegExp(
+    "^" + S.call(L).replace(E, "\\$&").replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, "$1.*?") + "$"
   ), w = c.Symbol, H = v.splice, P = Q(c, "Map"), R = Q(Object, "create"), O = w ? w.prototype : void 0, V = O ? O.toString : void 0;
   function T(t) {
     var n = -1, l = t ? t.length : 0;
@@ -182,15 +182,15 @@ function qe() {
     return l && l == y ? t : void 0;
   }
   function Ne(t) {
-    if (!ee(t) || Ee(t))
+    if (!ee(t) || Ce(t))
       return !1;
-    var n = Te(t) || x(t) ? p : o;
+    var n = Te(t) || g(t) ? p : o;
     return n.test(Re(t));
   }
   function we(t) {
     if (typeof t == "string")
       return t;
-    if (J(t))
+    if (G(t))
       return V ? V.call(t) : "";
     var n = t + "";
     return n == "0" && 1 / t == -1 / 0 ? "-0" : n;
@@ -200,26 +200,26 @@ function qe() {
   }
   function q(t, n) {
     var l = t.__data__;
-    return Ce(n) ? l[typeof n == "string" ? "string" : "hash"] : l.map;
+    return Ee(n) ? l[typeof n == "string" ? "string" : "hash"] : l.map;
   }
   function Q(t, n) {
-    var l = f(t, n);
+    var l = x(t, n);
     return Ne(l) ? l : void 0;
   }
   function $e(t, n) {
     if (K(t))
       return !1;
     var l = typeof t;
-    return l == "number" || l == "symbol" || l == "boolean" || t == null || J(t) ? !0 : b.test(t) || !h.test(t) || n != null && t in Object(n);
+    return l == "number" || l == "symbol" || l == "boolean" || t == null || G(t) ? !0 : b.test(t) || !h.test(t) || n != null && t in Object(n);
   }
-  function Ce(t) {
+  function Ee(t) {
     var n = typeof t;
     return n == "string" || n == "number" || n == "symbol" || n == "boolean" ? t !== "__proto__" : t === null;
   }
-  function Ee(t) {
+  function Ce(t) {
     return !!_ && _ in t;
   }
-  var Fe = B(function(t) {
+  var Fe = J(function(t) {
     t = Ie(t);
     var n = [];
     return j.test(t) && n.push(""), t.replace($, function(l, y, z, D) {
@@ -227,7 +227,7 @@ function qe() {
     }), n;
   });
   function Se(t) {
-    if (typeof t == "string" || J(t))
+    if (typeof t == "string" || G(t))
       return t;
     var n = t + "";
     return n == "0" && 1 / t == -1 / 0 ? "-0" : n;
@@ -245,7 +245,7 @@ function qe() {
     }
     return "";
   }
-  function B(t, n) {
+  function J(t, n) {
     if (typeof t != "function" || n && typeof n != "function")
       throw new TypeError(u);
     var l = function() {
@@ -255,16 +255,16 @@ function qe() {
       var re = t.apply(this, y);
       return l.cache = D.set(z, re), re;
     };
-    return l.cache = new (B.Cache || k)(), l;
+    return l.cache = new (J.Cache || k)(), l;
   }
-  B.Cache = k;
+  J.Cache = k;
   function Ae(t, n) {
     return t === n || t !== t && n !== n;
   }
   var K = Array.isArray;
   function Te(t) {
     var n = ee(t) ? A.call(t) : "";
-    return n == a || n == g;
+    return n == a || n == f;
   }
   function ee(t) {
     var n = typeof t;
@@ -273,7 +273,7 @@ function qe() {
   function ke(t) {
     return !!t && typeof t == "object";
   }
-  function J(t) {
+  function G(t) {
     return typeof t == "symbol" || ke(t) && A.call(t) == m;
   }
   function Ie(t) {
@@ -283,10 +283,10 @@ function qe() {
     var y = t == null ? void 0 : ve(t, n);
     return y === void 0 ? l : y;
   }
-  return Y = Le, Y;
+  return X = Le, X;
 }
 var Ue = qe();
-const Z = /* @__PURE__ */ ze(Ue);
+const B = /* @__PURE__ */ ze(Ue);
 class Ze {
   data;
   fieldMappings;
@@ -323,15 +323,15 @@ class Ze {
       return console.warn(`Field "${s}" not available for resource type "${this.data.resourceType}". Available fields:`, Object.keys(this.fieldMappings)), `[${s}?]`;
     try {
       if (a.includes("telecom.find(") && this.data.resourceType === "Patient") {
-        const g = this.data;
+        const f = this.data;
         if (a.includes("'email'"))
-          return g.telecom?.find((h) => h.system === "email")?.value || "";
+          return f.telecom?.find((h) => h.system === "email")?.value || "";
         if (a.includes("'phone'"))
-          return g.telecom?.find((h) => h.system === "phone")?.value || "";
+          return f.telecom?.find((h) => h.system === "phone")?.value || "";
       }
-      return Z(this.data, a) || "";
-    } catch (g) {
-      return console.error("Error resolving field:", s, g), "";
+      return B(this.data, a) || "";
+    } catch (f) {
+      return console.error("Error resolving field:", s, f), "";
     }
   }
   /**
@@ -344,12 +344,12 @@ class Ze {
     try {
       let a = s;
       a = this.replaceFhirPaths(a);
-      const g = Object.keys(this.fieldMappings).sort((h, b) => b.length - h.length);
-      for (const h of g) {
+      const f = Object.keys(this.fieldMappings).sort((h, b) => b.length - h.length);
+      for (const h of f) {
         const b = new RegExp(`\\b${h}\\b`, "g");
         if (b.test(a)) {
-          const j = this.getFieldValue(h), C = String(j || "").replace(/"/g, '\\"');
-          a = a.replace(b, `"${C}"`);
+          const j = this.getFieldValue(h), E = String(j || "").replace(/"/g, '\\"');
+          a = a.replace(b, `"${E}"`);
         }
       }
       console.log("After field replacement:", a);
@@ -365,12 +365,12 @@ class Ze {
   replaceFhirPaths(s) {
     console.log("Original expression:", s), console.log("Data:", this.data);
     let a = s;
-    const g = /telecom\.find\([^)]+\)\.value/g;
-    a = a.replace(g, (d) => {
+    const f = /telecom\.find\([^)]+\)\.value/g;
+    a = a.replace(f, (d) => {
       console.log("Processing telecom find:", d);
       try {
-        const c = this.resolveFhirPath(d), f = String(c || "").replace(/"/g, '\\"');
-        return console.log("Telecom find result:", d, "->", c), `"${f}"`;
+        const c = this.resolveFhirPath(d), x = String(c || "").replace(/"/g, '\\"');
+        return console.log("Telecom find result:", d, "->", c), `"${x}"`;
       } catch (c) {
         return console.warn("Error resolving telecom path:", d, c), '""';
       }
@@ -383,9 +383,9 @@ class Ze {
     let $;
     for (; ($ = j.exec(a)) !== null; )
       Array.from(m).some((d) => d.includes($[0])) || m.add($[0]);
-    const C = /\b[a-zA-Z][a-zA-Z0-9]*\[[0-9]+\]/g;
+    const E = /\b[a-zA-Z][a-zA-Z0-9]*\[[0-9]+\]/g;
     let e;
-    for (; (e = C.exec(a)) !== null; )
+    for (; (e = E.exec(a)) !== null; )
       Array.from(m).some((d) => d.includes(e[0])) || m.add(e[0]);
     const o = Array.from(m).map((d) => ({ 0: d }));
     console.log("Found FHIR path matches:", o.map((d) => d[0])), o.sort((d, c) => c[0].length - d[0].length);
@@ -395,14 +395,14 @@ class Ze {
       if (!(i.has(c) || a.includes(`"${c}"`))) {
         console.log("Processing FHIR path:", c);
         try {
-          const f = this.resolveFhirPath(c);
-          console.log("FHIR path result:", c, "->", f, "(type:", typeof f, ")");
-          const x = String(f || "").replace(/"/g, '\\"'), v = a;
-          a = a.replace(new RegExp(c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), `"${x}"`), a !== v ? (console.log(`Replaced "${c}" with "${x}"`), console.log("Before:", v), console.log("After:", a)) : console.log(`No replacements made for "${c}"`), i.add(c);
-        } catch (f) {
-          console.warn("Error resolving FHIR path:", c, f);
-          const x = c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-          a = a.replace(new RegExp(`\\b${x}\\b`, "g"), '""'), i.add(c);
+          const x = this.resolveFhirPath(c);
+          console.log("FHIR path result:", c, "->", x, "(type:", typeof x, ")");
+          const g = String(x || "").replace(/"/g, '\\"'), v = a;
+          a = a.replace(new RegExp(c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), `"${g}"`), a !== v ? (console.log(`Replaced "${c}" with "${g}"`), console.log("Before:", v), console.log("After:", a)) : console.log(`No replacements made for "${c}"`), i.add(c);
+        } catch (x) {
+          console.warn("Error resolving FHIR path:", c, x);
+          const g = c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          a = a.replace(new RegExp(`\\b${g}\\b`, "g"), '""'), i.add(c);
         }
       }
     }
@@ -415,17 +415,17 @@ class Ze {
     console.log("Resolving FHIR path:", s, "against data:", this.data);
     try {
       if (s.includes("telecom.find(") && this.data.resourceType === "Patient") {
-        const g = this.data;
+        const f = this.data;
         if (s.includes("'email'") || s.includes('"email"')) {
-          const h = g.telecom?.find((b) => b.system === "email")?.value || "";
+          const h = f.telecom?.find((b) => b.system === "email")?.value || "";
           return console.log("Telecom email result:", h), h;
         }
         if (s.includes("'phone'") || s.includes('"phone"')) {
-          const h = g.telecom?.find((b) => b.system === "phone")?.value || "";
+          const h = f.telecom?.find((b) => b.system === "phone")?.value || "";
           return console.log("Telecom phone result:", h), h;
         }
       }
-      const a = Z(this.data, s);
+      const a = B(this.data, s);
       return console.log("Lodash.get result for", s, ":", a, "(type:", typeof a, ")"), a || "";
     } catch (a) {
       return console.error("Error resolving FHIR path:", s, a), "";
@@ -469,7 +469,7 @@ const Je = ({ template: u, sampleData: s }) => {
       default:
         return "📋";
     }
-  }, g = (e, o) => {
+  }, f = (e, o) => {
     if (!e || !o) return "";
     try {
       if (e.includes('telecom.find(t => t.system === "email").value'))
@@ -480,7 +480,7 @@ const Je = ({ template: u, sampleData: s }) => {
         const i = o.contact?.[0];
         return i?.telecom && i.telecom.find((c) => c.system === "phone")?.value || "";
       }
-      return Z(o, e) || "";
+      return B(o, e) || "";
     } catch (i) {
       return console.error("Error resolving FHIR path:", e, i), "";
     }
@@ -496,14 +496,14 @@ const Je = ({ template: u, sampleData: s }) => {
           if (e.prefix) return `${e.prefix} Name`;
           break;
         case "ContactPoint":
-          const f = e.system || "Contact", x = e.value;
-          return x ? `${f.charAt(0).toUpperCase() + f.slice(1)}: ${x}` : e.use ? `${e.use.charAt(0).toUpperCase() + e.use.slice(1)} ${f}` : `${f.charAt(0).toUpperCase() + f.slice(1)} Contact`;
+          const x = e.system || "Contact", g = e.value;
+          return g ? `${x.charAt(0).toUpperCase() + x.slice(1)}: ${g}` : e.use ? `${e.use.charAt(0).toUpperCase() + e.use.slice(1)} ${x}` : `${x.charAt(0).toUpperCase() + x.slice(1)} Contact`;
         case "Address":
-          const v = e.line?.[0] || e.street, N = e.city, E = e.state;
+          const v = e.line?.[0] || e.street, N = e.city, C = e.state;
           if (v && N)
             return `${v}, ${N}`;
-          if (N && E)
-            return `${N}, ${E}`;
+          if (N && C)
+            return `${N}, ${C}`;
           if (N)
             return N;
           if (v)
@@ -538,10 +538,10 @@ const Je = ({ template: u, sampleData: s }) => {
       ] }, e.id);
     let c = null;
     try {
-      const x = localStorage.getItem("fhir-templates");
-      x && (c = (JSON.parse(x).templates || []).find((N) => N.id === i) || null);
-    } catch (x) {
-      console.error("Failed to load nested template:", x);
+      const g = localStorage.getItem("fhir-templates");
+      g && (c = (JSON.parse(g).templates || []).find((N) => N.id === i) || null);
+    } catch (g) {
+      console.error("Failed to load nested template:", g);
     }
     if (!c)
       return /* @__PURE__ */ r.jsxs("div", { className: "mb-4 p-4 bg-red-50 border border-red-200 rounded-lg", children: [
@@ -555,31 +555,31 @@ const Je = ({ template: u, sampleData: s }) => {
           i
         ] })
       ] }, e.id);
-    let f = null;
+    let x = null;
     if (e.fhirPath && s)
       try {
-        f = g(e.fhirPath, s);
-      } catch (x) {
-        console.error("Error extracting nested data:", x);
+        x = f(e.fhirPath, s);
+      } catch (g) {
+        console.error("Error extracting nested data:", g);
       }
-    return !f && c.sampleData && (f = c.sampleData), /* @__PURE__ */ r.jsx(Pe.Fragment, { children: o.multiple && Array.isArray(f) ? (
+    return !x && c.sampleData && (x = c.sampleData), /* @__PURE__ */ r.jsx(Pe.Fragment, { children: o.multiple && Array.isArray(x) ? (
       // Render multiple instances
-      f.length > 0 ? /* @__PURE__ */ r.jsx("div", { className: "space-y-4", children: f.map((x, v) => /* @__PURE__ */ r.jsxs("div", { className: "border border-gray-200 rounded-lg p-4 bg-white", children: [
+      x.length > 0 ? /* @__PURE__ */ r.jsx("div", { className: "space-y-4", children: x.map((g, v) => /* @__PURE__ */ r.jsxs("div", { className: "border border-gray-200 rounded-lg p-4 bg-white", children: [
         /* @__PURE__ */ r.jsxs("div", { className: "flex items-center justify-between mb-3 pb-2 border-b border-gray-100", children: [
-          /* @__PURE__ */ r.jsx("div", { className: "text-sm font-medium text-gray-700", children: m(x, d, v) }),
+          /* @__PURE__ */ r.jsx("div", { className: "text-sm font-medium text-gray-700", children: m(g, d, v) }),
           /* @__PURE__ */ r.jsx("div", { className: "text-xs text-gray-500", children: d })
         ] }),
-        /* @__PURE__ */ r.jsx("div", { className: "space-y-3", children: c.fields.sort((N, E) => N.order - E.order).map((N) => $(N, x)) })
+        /* @__PURE__ */ r.jsx("div", { className: "space-y-3", children: c.fields.sort((N, C) => N.order - C.order).map((N) => $(N, g)) })
       ] }, v)) }) : /* @__PURE__ */ r.jsxs("div", { className: "p-4 text-center text-gray-500 border border-gray-200 rounded-lg bg-gray-50", children: [
         /* @__PURE__ */ r.jsx("span", { className: "block text-2xl mb-2", children: "📭" }),
         /* @__PURE__ */ r.jsx("p", { className: "text-sm", children: "No items to display" })
       ] })
     ) : (
       // Render single instance
-      /* @__PURE__ */ r.jsx("div", { className: "space-y-3", children: c.fields.sort((x, v) => x.order - v.order).map((x) => $(x, f)) })
+      /* @__PURE__ */ r.jsx("div", { className: "space-y-3", children: c.fields.sort((g, v) => g.order - v.order).map((g) => $(g, x)) })
     ) }, e.id);
   }, b = (e, o) => e.hideIfEmpty ? !!(o == null || o === "" || Array.isArray(o) && o.length === 0 || typeof o == "object" && Object.keys(o).length === 0) : !1, j = (e, o) => b(e, o) ? "" : !o && o !== 0 && o !== !1 ? "N/A" : String(o), $ = (e, o) => {
-    const i = e.fhirPath && Z(o, e.fhirPath) || "";
+    const i = e.fhirPath && B(o, e.fhirPath) || "";
     if (b(e, i)) return null;
     switch (e.type) {
       case "label":
@@ -613,13 +613,13 @@ const Je = ({ template: u, sampleData: s }) => {
           /* @__PURE__ */ r.jsx("dd", { className: "bg-gray-50 px-3 py-2 rounded border text-gray-900", children: c })
         ] }, e.id);
       case "select":
-        const x = e.options?.find((_) => _.value === i)?.label || i || j(e, i);
+        const g = e.options?.find((_) => _.value === i)?.label || i || j(e, i);
         return /* @__PURE__ */ r.jsxs("div", { className: "mb-4 bg-white border border-gray-200 rounded-lg p-3", children: [
           /* @__PURE__ */ r.jsxs("div", { className: "flex items-center space-x-2 mb-2", children: [
             /* @__PURE__ */ r.jsx("span", { children: "📋" }),
             /* @__PURE__ */ r.jsx("dt", { className: "text-sm font-medium text-gray-700", children: e.label })
           ] }),
-          /* @__PURE__ */ r.jsx("dd", { className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800", children: x })
+          /* @__PURE__ */ r.jsx("dd", { className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800", children: g })
         ] }, e.id);
       case "radio":
         const N = e.options?.find((_) => _.value === i)?.label || i || j(e, i);
@@ -631,13 +631,13 @@ const Je = ({ template: u, sampleData: s }) => {
           /* @__PURE__ */ r.jsx("dd", { className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800", children: N })
         ] }, e.id);
       case "checkbox":
-        const E = !!i;
+        const C = !!i;
         return /* @__PURE__ */ r.jsx("div", { className: "mb-4 bg-white border border-gray-200 rounded-lg p-3", children: /* @__PURE__ */ r.jsxs("div", { className: "flex items-center justify-between", children: [
           /* @__PURE__ */ r.jsxs("div", { className: "flex items-center space-x-2", children: [
             /* @__PURE__ */ r.jsx("span", { children: "☑️" }),
             /* @__PURE__ */ r.jsx("dt", { className: "text-sm font-medium text-gray-700", children: e.label })
           ] }),
-          /* @__PURE__ */ r.jsx("dd", { className: `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${E ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`, children: E ? "✓ Yes" : "✗ No" })
+          /* @__PURE__ */ r.jsx("dd", { className: `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${C ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`, children: C ? "✓ Yes" : "✗ No" })
         ] }) }, e.id);
       case "group":
         const F = e;
@@ -657,8 +657,8 @@ const Je = ({ template: u, sampleData: s }) => {
           /* @__PURE__ */ r.jsx("dd", { className: "bg-gray-50 px-3 py-2 rounded border text-gray-900", children: j(e, i) })
         ] }, e.id);
     }
-  }, C = (e) => {
-    const o = e.expression && s ? Be(e.expression, s) : e.fhirPath ? g(e.fhirPath, s) : "";
+  }, E = (e) => {
+    const o = e.expression && s ? Be(e.expression, s) : e.fhirPath ? f(e.fhirPath, s) : "";
     if (b(e, o)) return null;
     switch (e.type) {
       case "label":
@@ -688,7 +688,7 @@ const Je = ({ template: u, sampleData: s }) => {
           ] })
         ] }, e.id);
       case "date":
-        const f = (p) => {
+        const x = (p) => {
           if (!p) return j(e, p);
           try {
             const w = new Date(p), H = w.toLocaleDateString("en-US", {
@@ -712,13 +712,13 @@ const Je = ({ template: u, sampleData: s }) => {
               e.label,
               e.required && /* @__PURE__ */ r.jsx("span", { className: "text-red-500 ml-1", children: "*" })
             ] }),
-            /* @__PURE__ */ r.jsx("dd", { className: `${e.hideLabel ? "" : "mt-1"} text-base text-gray-900 font-medium`, children: f(o) })
+            /* @__PURE__ */ r.jsx("dd", { className: `${e.hideLabel ? "" : "mt-1"} text-base text-gray-900 font-medium`, children: x(o) })
           ] })
         ] }, e.id);
       case "select":
-        const x = e, v = () => {
+        const g = e, v = () => {
           if (!o) return j(e, o);
-          const p = (x.options || []).find((w) => w.value === o);
+          const p = (g.options || []).find((w) => w.value === o);
           return p ? p.label : o;
         }, N = () => e.label.toLowerCase().includes("gender") ? o === "male" ? "👨" : o === "female" ? "👩" : "👤" : e.label.toLowerCase().includes("status") ? "📊" : e.label.toLowerCase().includes("type") ? "🏷️" : "📋";
         return /* @__PURE__ */ r.jsxs("div", { className: "flex items-start py-3 border-b border-gray-100 last:border-b-0", children: [
@@ -732,9 +732,9 @@ const Je = ({ template: u, sampleData: s }) => {
           ] })
         ] }, e.id);
       case "radio":
-        const E = e, F = () => {
+        const C = e, F = () => {
           if (!o) return j(e, o);
-          const p = (E.options || []).find((w) => w.value === o);
+          const p = (C.options || []).find((w) => w.value === o);
           return p ? p.label : o;
         }, _ = () => e.label.toLowerCase().includes("gender") ? o === "male" ? "👨" : o === "female" ? "👩" : "👤" : e.label.toLowerCase().includes("priority") ? "⚡" : e.label.toLowerCase().includes("rating") ? "⭐" : "🔘";
         return /* @__PURE__ */ r.jsxs("div", { className: "flex items-start py-3 border-b border-gray-100 last:border-b-0", children: [
@@ -766,7 +766,7 @@ const Je = ({ template: u, sampleData: s }) => {
             /* @__PURE__ */ r.jsx("span", { className: "mr-2", children: "📁" }),
             e.label
           ] }) }),
-          /* @__PURE__ */ r.jsx("div", { className: "p-4 space-y-4", children: (L.children || []).sort((p, w) => p.order - w.order).map((p) => C(p)) })
+          /* @__PURE__ */ r.jsx("div", { className: "p-4 space-y-4", children: (L.children || []).sort((p, w) => p.order - w.order).map((p) => E(p)) })
         ] }, e.id);
       case "widget":
         return h(e);
@@ -781,8 +781,8 @@ const Je = ({ template: u, sampleData: s }) => {
               gap: `${A.gap || 16}px`
             },
             children: [
-              /* @__PURE__ */ r.jsx("div", { className: "space-y-4", children: (A.leftColumn || []).sort((p, w) => p.order - w.order).map((p) => C(p)) }),
-              /* @__PURE__ */ r.jsx("div", { className: "space-y-4", children: (A.rightColumn || []).sort((p, w) => p.order - w.order).map((p) => C(p)) })
+              /* @__PURE__ */ r.jsx("div", { className: "space-y-4", children: (A.leftColumn || []).sort((p, w) => p.order - w.order).map((p) => E(p)) }),
+              /* @__PURE__ */ r.jsx("div", { className: "space-y-4", children: (A.rightColumn || []).sort((p, w) => p.order - w.order).map((p) => E(p)) })
             ]
           }
         ) }, e.id);
@@ -827,7 +827,7 @@ const Je = ({ template: u, sampleData: s }) => {
         ] }),
         u.description && /* @__PURE__ */ r.jsx("p", { className: "mt-2 text-blue-700", children: u.description })
       ] }),
-      /* @__PURE__ */ r.jsx("div", { className: "p-6", children: /* @__PURE__ */ r.jsx("dl", { className: "space-y-4", children: u.fields.sort((e, o) => e.order - o.order).map((e) => C(e)) }) })
+      /* @__PURE__ */ r.jsx("div", { className: "p-6", children: /* @__PURE__ */ r.jsx("dl", { className: "space-y-4", children: u.fields.sort((e, o) => e.order - o.order).map((e) => E(e)) }) })
     ] }) : /* @__PURE__ */ r.jsxs("div", { className: "text-center py-8", children: [
       /* @__PURE__ */ r.jsx(
         "svg",
@@ -912,21 +912,21 @@ const Je = ({ template: u, sampleData: s }) => {
     "--color-gray-700": "#000000",
     "--color-gray-900": "#000000"
   }
-}, X = ({
+}, Z = ({
   templates: u,
   templateName: s,
   data: a,
-  theme: g = "light",
+  theme: f = "light",
   className: m = "",
   style: h = {},
   showErrors: b = !0
 }) => {
-  const [j, $] = Oe(null), { workspace: C, template: e } = te(() => {
+  const [j, $] = Oe(null), { workspace: E, template: e } = te(() => {
     try {
       $(null);
       const i = He(u), d = Ve(i, s);
       if (!d) {
-        const c = i.templates.map((f) => f.name).join(", ");
+        const c = i.templates.map((x) => x.name).join(", ");
         throw new Error(`Template "${s}" not found. Available templates: ${c}`);
       }
       return We(d, a) || console.warn("Template may not be fully compatible with provided data"), {
@@ -938,12 +938,12 @@ const Je = ({ template: u, sampleData: s }) => {
       return $(d), { workspace: null, template: null };
     }
   }, [u, s, a]), o = te(() => {
-    const i = Ge[g];
+    const i = Ge[f];
     return {
       ...h,
       ...i
     };
-  }, [g, h]);
+  }, [f, h]);
   return j ? b ? /* @__PURE__ */ r.jsxs(
     "div",
     {
@@ -964,7 +964,7 @@ const Je = ({ template: u, sampleData: s }) => {
         /* @__PURE__ */ r.jsx("div", { style: { fontSize: "14px" }, children: j })
       ]
     }
-  ) : null : !e || !C ? /* @__PURE__ */ r.jsx(
+  ) : null : !e || !E ? /* @__PURE__ */ r.jsx(
     "div",
     {
       className: `fhir-widget fhir-widget-loading ${m}`,
@@ -982,7 +982,7 @@ const Je = ({ template: u, sampleData: s }) => {
   ) : /* @__PURE__ */ r.jsx(
     "div",
     {
-      className: `fhir-widget fhir-widget-${g} ${m}`,
+      className: `fhir-widget fhir-widget-${f} ${m}`,
       style: o,
       children: /* @__PURE__ */ r.jsx(
         Je,
@@ -994,25 +994,30 @@ const Je = ({ template: u, sampleData: s }) => {
     }
   );
 };
-X.render = (u, s) => {
+Z.render = (u, s) => {
   if (typeof window > "u") return;
-  const a = window.React, g = window.ReactDOM;
-  if (!a || !g)
+  const a = window.React, f = window.ReactDOM;
+  if (!a || !f)
     throw new Error("React and ReactDOM must be available globally for FhirWidget.render()");
   const m = typeof s == "string" ? document.querySelector(s) : s;
   if (!m)
     throw new Error(`Container element not found: ${s}`);
-  g.render(a.createElement(X, u), m);
+  if (f.createRoot)
+    f.createRoot(m).render(a.createElement(Z, u));
+  else if (f.render)
+    f.render(a.createElement(Z, u), m);
+  else
+    throw new Error("No compatible ReactDOM render method found");
 };
 const Ye = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  default: X
+  default: Z
 }, Symbol.toStringTag, { value: "Module" }));
 typeof window < "u" && Promise.resolve().then(() => Ye).then((u) => {
   window.FhirWidget = u.default;
 });
 export {
-  X as FhirWidget,
+  Z as FhirWidget,
   He as decodeWorkspace,
   Ve as findTemplateByName
 };

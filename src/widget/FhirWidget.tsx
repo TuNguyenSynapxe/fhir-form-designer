@@ -195,7 +195,17 @@ const FhirWidget: React.FC<FhirWidgetProps> = ({
     throw new Error(`Container element not found: ${container}`);
   }
   
-  ReactDOM.render(React.createElement(FhirWidget, props), targetElement);
+  // Support both React 18+ createRoot and legacy render
+  if (ReactDOM.createRoot) {
+    // React 18+ with createRoot
+    const root = ReactDOM.createRoot(targetElement);
+    root.render(React.createElement(FhirWidget, props));
+  } else if (ReactDOM.render) {
+    // Legacy React 17 and below
+    ReactDOM.render(React.createElement(FhirWidget, props), targetElement);
+  } else {
+    throw new Error('No compatible ReactDOM render method found');
+  }
 };
 
 export default FhirWidget;

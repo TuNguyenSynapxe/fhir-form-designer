@@ -293,6 +293,7 @@
                 <div class="render-controls">
                     <button onclick="renderWidget()" class="primary-button" disabled id="render-button">🚀 Render Widget</button>
                     <button onclick="clearWidget()">Clear Widget</button>
+                    <button onclick="debugDependencies()">🔍 Debug Dependencies</button>
                 </div>
                 <div id="render-status" class="status-message"></div>
             </div>
@@ -377,6 +378,24 @@ npm install react react-dom
     <!-- Load the FHIR Widget (this will be built) -->
     <script src="./dist-widget/fhir-widget.umd.js"></script>
     <link rel="stylesheet" href="./dist-widget/fhir-widget.css">
+    
+    <!-- Wait for all dependencies to load before initializing -->
+    <script>
+        function waitForDependencies(callback) {
+            const checkDependencies = () => {
+                if (typeof React !== 'undefined' && 
+                    typeof ReactDOM !== 'undefined' && 
+                    typeof FhirWidget !== 'undefined') {
+                    console.log('✅ All dependencies loaded:', { React: !!React, ReactDOM: !!ReactDOM, FhirWidget: !!FhirWidget });
+                    callback();
+                } else {
+                    console.log('⏳ Waiting for dependencies...', { React: !!window.React, ReactDOM: !!window.ReactDOM, FhirWidget: !!window.FhirWidget });
+                    setTimeout(checkDependencies, 100);
+                }
+            };
+            checkDependencies();
+        }
+    </script>
 
     <script>
         // Global state
@@ -640,6 +659,13 @@ npm install react react-dom
             const templateName = document.getElementById('template-select').value;
             const theme = document.getElementById('theme-select').value;
             
+            // Check if dependencies are loaded
+            if (typeof React === 'undefined' || typeof ReactDOM === 'undefined' || typeof FhirWidget === 'undefined') {
+                showStatus('❌ Dependencies not loaded. Please wait and try again.', 'error');
+                console.error('Dependencies check failed:', { React: !!window.React, ReactDOM: !!window.ReactDOM, FhirWidget: !!window.FhirWidget });
+                return;
+            }
+            
             // Validate inputs
             if (!currentWorkspace) {
                 showStatus('❌ Please load a workspace first', 'error');
@@ -663,6 +689,8 @@ npm install react react-dom
                 // Clear previous widget
                 clearWidget();
                 
+                console.log('🚀 Rendering widget with:', { templateName, theme, hasData: !!currentSampleData });
+                
                 // Render new widget
                 FhirWidget.render({
                     templates: base64Input,
@@ -679,7 +707,7 @@ npm install react react-dom
                 const errorMsg = `❌ Widget render failed: ${error.message}`;
                 showStatus(errorMsg, 'error');
                 document.getElementById('widget-demo').innerHTML = 
-                    `<div class="error">Error: ${error.message}</div>`;
+                    `<div class="error">Error: ${error.message}<br><small>Check browser console for details</small></div>`;
                 console.error('❌ Widget render error:', error);
             }
         }
@@ -704,34 +732,71 @@ npm install react react-dom
                 statusDiv.style.display = 'none';
             }, 5000);
         }
+        
+        function debugDependencies() {
+            console.log('🔍 Debugging dependencies...');
+            const info = {
+                React: {
+                    available: typeof React !== 'undefined',
+                    version: typeof React !== 'undefined' ? React.version : 'Not available',
+                    createElement: typeof React !== 'undefined' && typeof React.createElement === 'function'
+                },
+                ReactDOM: {
+                    available: typeof ReactDOM !== 'undefined',
+                    version: typeof ReactDOM !== 'undefined' ? ReactDOM.version : 'Not available',
+                    render: typeof ReactDOM !== 'undefined' && typeof ReactDOM.render === 'function',
+                    createRoot: typeof ReactDOM !== 'undefined' && typeof ReactDOM.createRoot === 'function'
+                },
+                FhirWidget: {
+                    available: typeof FhirWidget !== 'undefined',
+                    hasRender: typeof FhirWidget !== 'undefined' && typeof FhirWidget.render === 'function'
+                }
+            };
+            
+            console.table(info);
+            
+            const message = `
+React: ${info.React.available ? '✅' : '❌'} (${info.React.version})
+ReactDOM: ${info.ReactDOM.available ? '✅' : '❌'} (render: ${info.ReactDOM.render ? '✅' : '❌'}, createRoot: ${info.ReactDOM.createRoot ? '✅' : '❌'})
+FhirWidget: ${info.FhirWidget.available ? '✅' : '❌'} (render: ${info.FhirWidget.hasRender ? '✅' : '❌'})
+            `.trim();
+            
+            alert(message);
+            showStatus('Debug info logged to console', 'success');
+        }
 
         // Initialize page when loaded
         window.addEventListener('load', function() {
             console.log('🚀 Initializing FHIR Widget Test Page...');
             
-            // Initialize with sample data
-            loadPredefinedSample();
-            
-            // Multiple widget instances (static examples)
-            try {
-                FhirWidget.render({
-                    templates: sampleTemplatesBase64,
-                    templateName: "Patient Summary", 
-                    data: sampleData.Patient,
-                    theme: "light"
-                }, '#widget-light');
+            // Wait for all dependencies before initializing
+            waitForDependencies(function() {
+                console.log('🎉 All dependencies ready, initializing widgets...');
                 
-                FhirWidget.render({
-                    templates: sampleTemplatesBase64,
-                    templateName: "Patient Demographics",
-                    data: sampleData.Patient, 
-                    theme: "dark"
-                }, '#widget-dark');
+                // Initialize with sample data
+                loadPredefinedSample();
                 
-                console.log('✅ Static widget examples initialized successfully');
-            } catch (error) {
-                console.error('❌ Static widget initialization error:', error);
-            }
+                // Multiple widget instances (static examples)
+                try {
+                    FhirWidget.render({
+                        templates: sampleTemplatesBase64,
+                        templateName: "Patient Summary", 
+                        data: sampleData.Patient,
+                        theme: "light"
+                    }, '#widget-light');
+                    
+                    FhirWidget.render({
+                        templates: sampleTemplatesBase64,
+                        templateName: "Patient Demographics",
+                        data: sampleData.Patient, 
+                        theme: "dark"
+                    }, '#widget-dark');
+                    
+                    console.log('✅ Static widget examples initialized successfully');
+                } catch (error) {
+                    console.error('❌ Static widget initialization error:', error);
+                }
+            });
         });
     </script>
 </body>
