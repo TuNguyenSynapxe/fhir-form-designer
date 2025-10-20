@@ -1,0 +1,183 @@
+/* Theme CSS Variables and Classes */
+
+.themed-component {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Themed input styles */
+.themed-input {
+  background-color: var(--theme-input-background);
+  border-color: var(--theme-input-border);
+  color: var(--theme-input-text);
+}
+
+.themed-input:focus {
+  border-color: var(--theme-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Themed field containers */
+.themed-field {
+  background-color: var(--theme-field-background);
+  border-color: var(--theme-field-border);
+  color: var(--theme-text-primary);
+}
+
+/* Themed text styles */
+.themed-text-primary {
+  color: var(--theme-text-primary);
+}
+
+.themed-text-secondary {
+  color: var(--theme-text-secondary);
+}
+
+.themed-text-muted {
+  color: var(--theme-text-muted);
+}
+
+/* Themed backgrounds */
+.themed-background {
+  background-color: var(--theme-background);
+}
+
+.themed-surface {
+  background-color: var(--theme-surface);
+}
+
+/* Themed borders */
+.themed-border {
+  border-color: var(--theme-border);
+}
+
+/* Preview container theming */
+.preview-container {
+  background-color: var(--theme-background);
+  color: var(--theme-text-primary);
+  min-height: 100vh;
+}
+
+.preview-form {
+  background-color: var(--theme-surface);
+  border-color: var(--theme-border);
+}
+
+/* Field specific theming */
+.preview-field-label {
+  color: var(--theme-text-secondary);
+}
+
+.preview-field-value {
+  background-color: var(--theme-field-background);
+  border-color: var(--theme-field-border);
+  color: var(--theme-text-primary);
+}
+
+/* Group field theming */
+.preview-group {
+  background-color: var(--theme-surface);
+  border-color: var(--theme-border);
+}
+
+.preview-group-header {
+  background-color: var(--theme-field-background);
+  color: var(--theme-text-primary);
+  border-bottom-color: var(--theme-border);
+}
+
+/* Two-column theming */
+.preview-two-column {
+  background-color: var(--theme-surface);
+  border-color: var(--theme-border);
+}
+
+/* Widget field theming */
+.preview-widget {
+  background-color: var(--theme-surface);
+  border-color: var(--theme-border);
+}
+
+.preview-widget-header {
+  background-color: var(--theme-field-background);
+  color: var(--theme-text-primary);
+}
+
+/* Dark theme specific adjustments */
+[data-theme="dark"] .preview-container {
+  background-color: #111827;
+}
+
+[data-theme="dark"] .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+/* High contrast theme adjustments */
+[data-theme="highContrast"] * {
+  font-weight: 600;
+}
+
+[data-theme="highContrast"] .preview-field-value {
+  border-width: 2px;
+}
+
+[data-theme="highContrast"] .preview-group {
+  border-width: 2px;
+}
+
+/* LivePreview component theming overrides */
+.themed-live-preview-wrapper .h-full.flex.flex-col {
+  background-color: var(--theme-background) !important;
+  color: var(--theme-text-primary) !important;
+}
+
+.themed-live-preview-wrapper .bg-white {
+  background-color: var(--theme-surface) !important;
+}
+
+.themed-live-preview-wrapper .text-gray-900 {
+  color: var(--theme-text-primary) !important;
+}
+
+.themed-live-preview-wrapper .text-gray-600 {
+  color: var(--theme-text-muted) !important;
+}
+
+.themed-live-preview-wrapper .text-gray-500 {
+  color: var(--theme-text-muted) !important;
+}
+
+.themed-live-preview-wrapper .text-gray-400 {
+  color: var(--theme-text-muted) !important;
+}
+
+.themed-live-preview-wrapper .border-gray-200 {
+  border-color: var(--theme-border) !important;
+}
+
+.themed-live-preview-wrapper .border-gray-100 {
+  border-color: var(--theme-border) !important;
+}
+
+.themed-live-preview-wrapper .bg-blue-50 {
+  background-color: var(--theme-primary-light) !important;
+}
+
+.themed-live-preview-wrapper .text-blue-900 {
+  color: var(--theme-primary) !important;
+}
+
+.themed-live-preview-wrapper .text-blue-700 {
+  color: var(--theme-primary) !important;
+}
+
+.themed-live-preview-wrapper .border-blue-100 {
+  border-color: var(--theme-primary-light) !important;
+}
+
+.themed-live-preview-wrapper .bg-gray-50 {
+  background-color: var(--theme-muted) !important;
+}
+
+.themed-live-preview-wrapper .text-green-600 {
+  color: var(--theme-success) !important;
+}
