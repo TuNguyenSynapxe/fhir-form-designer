@@ -19,6 +19,11 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState<string | null>(null);
+  const [showExportModal, setShowExportModal] = useState<{
+    workspace: Workspace;
+    base64Data: string;
+    isOpen: boolean;
+  } | null>(null);
   const [newWorkspace, setNewWorkspace] = useState({
     name: '',
     description: '',
@@ -109,6 +114,52 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({
     }
   };
 
+  const handleExportWorkspace = (workspace: Workspace) => {
+    // Get all templates for this workspace
+    const stored = localStorage.getItem('fhir-templates');
+    let templates: any[] = [];
+    
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        templates = (parsed.templates || []).filter((template: any) => 
+          template.workspaceId === workspace.id
+        );
+      } catch (error) {
+        console.error('Failed to load templates:', error);
+      }
+    }
+
+    // Create export data
+    const exportData = {
+      workspace: {
+        id: workspace.id,
+        name: workspace.name,
+        description: workspace.description,
+        icon: workspace.icon,
+        color: workspace.color
+      },
+      templates: templates,
+      exportedAt: new Date().toISOString(),
+      version: "1.0"
+    };
+
+    // Convert to base64
+    try {
+      const jsonString = JSON.stringify(exportData);
+      const base64Data = btoa(unescape(encodeURIComponent(jsonString)));
+      
+      setShowExportModal({
+        workspace,
+        base64Data,
+        isOpen: true
+      });
+    } catch (error) {
+      console.error('Failed to export workspace:', error);
+      alert('Failed to export workspace. Please try again.');
+    }
+  };
+
   const predefinedIcons = ['📋', '🩺', '📄', '🗂️', '📊', '⚕️', '🏥', '📝', '🔬', '💊'];
   const predefinedColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6b7280'];
 
@@ -150,15 +201,26 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({
                 </p>
               )}
             </div>
-            <button
-              onClick={() => setShowEditForm(currentWorkspace.id)}
-              className="p-1 text-gray-400 hover:text-gray-600"
-              title="Edit Workspace"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </button>
+            <div className="flex space-x-1">
+              <button
+                onClick={() => handleExportWorkspace(currentWorkspace)}
+                className="p-1 text-gray-400 hover:text-gray-600"
+                title="Export for Widget"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setShowEditForm(currentWorkspace.id)}
+                className="p-1 text-gray-400 hover:text-gray-600"
+                title="Edit Workspace"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -303,6 +365,15 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({
           predefinedColors={predefinedColors}
         />
       )}
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <ExportModal
+          workspace={showExportModal.workspace}
+          base64Data={showExportModal.base64Data}
+          onClose={() => setShowExportModal(null)}
+        />
+      )}
     </div>
   );
 };
@@ -427,6 +498,151 @@ const EditWorkspaceModal: React.FC<EditWorkspaceModalProps> = ({
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Export Modal Component
+interface ExportModalProps {
+  workspace: Workspace;
+  base64Data: string;
+  onClose: () => void;
+}
+
+const ExportModal: React.FC<ExportModalProps> = ({ workspace, base64Data, onClose }) => {
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const generateExampleCode = (base64Data: string) => {
+    return `// React Component Example
+import { FhirDisplayWidget } from '@your-org/fhir-display-widget';
+
+<FhirDisplayWidget
+  templatesData="${base64Data}"
+  mainTemplateId="your-template-id"
+  fhirData={yourFhirData}
+  theme="light"
+/>
+
+// HTML/JavaScript Example
+<script src="https://cdn.yoursite.com/fhir-display-widget.js"></script>
+<fhir-display-widget
+  templates-data="${base64Data}"
+  main-template-id="your-template-id"
+  fhir-data='{"resourceType": "Patient", ...}'>
+</fhir-display-widget>`;
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Export Workspace for Widget
+            </h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+          <div className="mb-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                style={{ backgroundColor: workspace.color }}
+              >
+                <span className="text-lg">{workspace.icon}</span>
+              </div>
+              <div>
+                <h4 className="text-lg font-medium text-gray-900">{workspace.name}</h4>
+                <p className="text-sm text-gray-600">{workspace.description}</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600">
+              This workspace has been exported as a base64 string that contains all templates and configuration. 
+              Use this string with the FhirDisplayWidget component to embed your forms in external websites.
+            </p>
+          </div>
+
+          <div className="space-y-6">
+            {/* Base64 Data Section */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Workspace Data (Base64)
+              </label>
+              <div className="relative">
+                <textarea
+                  value={base64Data}
+                  readOnly
+                  className="w-full h-32 p-3 border border-gray-300 rounded-md bg-gray-50 text-sm font-mono resize-none"
+                  placeholder="Base64 workspace data will appear here..."
+                />
+                <button
+                  onClick={() => copyToClipboard(base64Data)}
+                  className="absolute top-2 right-2 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                >
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+            </div>
+
+            {/* Usage Examples */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Usage Examples
+              </label>
+              <div className="relative">
+                <pre className="w-full h-64 p-3 border border-gray-300 rounded-md bg-gray-50 text-xs overflow-auto">
+{generateExampleCode(base64Data)}
+                </pre>
+                <button
+                  onClick={() => copyToClipboard(generateExampleCode(base64Data))}
+                  className="absolute top-2 right-2 px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                >
+                  Copy Code
+                </button>
+              </div>
+            </div>
+
+            {/* Instructions */}
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+              <h5 className="text-sm font-medium text-blue-900 mb-2">Integration Steps:</h5>
+              <ol className="text-sm text-blue-800 space-y-1">
+                <li>1. Copy the base64 workspace data above</li>
+                <li>2. Install the FhirDisplayWidget library in your project</li>
+                <li>3. Use the templatesData prop with the copied base64 string</li>
+                <li>4. Specify the mainTemplateId for the template you want to display</li>
+                <li>5. Provide your FHIR data to the fhirData prop</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+        
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <div className="flex justify-end">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+            >
+              Close
             </button>
           </div>
         </div>
