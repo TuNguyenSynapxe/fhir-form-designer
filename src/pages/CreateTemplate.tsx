@@ -10,6 +10,7 @@ const CreateTemplate: React.FC = () => {
   const [searchParams] = useSearchParams();
   const templateId = searchParams.get('template');
   const resourceTypeParam = searchParams.get('resourceType') as FhirResourceType;
+  const workspaceIdParam = searchParams.get('workspaceId');
 
   // Panel resizing state
   const [rightPanelWidth, setRightPanelWidth] = useState(() => {
@@ -30,6 +31,7 @@ const CreateTemplate: React.FC = () => {
     name: 'New Template',
     description: '',
     resourceType: resourceTypeParam || 'Patient',
+    workspaceId: workspaceIdParam || 'default-workspace',
     fields: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -301,6 +303,10 @@ const CreateTemplate: React.FC = () => {
 
     localStorage.setItem('fhir-templates', JSON.stringify({ templates }));
     alert('Template saved successfully!');
+    
+    // Navigate back to the workspace this template belongs to
+    const workspaceId = template.workspaceId || 'default-workspace';
+    navigate(`/?workspace=${encodeURIComponent(workspaceId)}`);
   };
 
   const handleExport = () => {
@@ -331,7 +337,10 @@ const CreateTemplate: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => navigate('/')}
+              onClick={() => {
+                const workspaceId = template.workspaceId || 'default-workspace';
+                navigate(`/?workspace=${encodeURIComponent(workspaceId)}`);
+              }}
               className="text-gray-600 hover:text-gray-900"
             >
               ← Back to Templates

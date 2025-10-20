@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import {
   DndContext,
   DragOverlay,
@@ -8,15 +9,15 @@ import {
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import {
-  arrayMove,
   SortableContext,
+  arrayMove,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { DesignCanvasProps, TemplateField, DragItem, FhirResourceType, TwoColumnField } from '../shared/types';
 import { forceScrollbarVisibility } from '../shared/useScrollbarVisibility';
-import TemplateSelector from './TemplateSelector';
+
 import { getAvailableFieldNames } from '../shared/expressionEvaluator';
 
 interface SortableFieldProps {
@@ -70,10 +71,7 @@ const DropZone: React.FC<DropZoneProps> = ({ position, onDrop, isActive = false 
     >
       {(isHovered || isActive) && (
         <div className="flex items-center justify-center h-full">
-          <div className="flex items-center text-blue-600 text-sm font-medium">
-            <span className="mr-2">📥</span>
-            Drop field here
-          </div>
+          <span className="text-blue-600 text-sm font-medium">📥 Drop field here</span>
         </div>
       )}
     </div>
@@ -97,12 +95,404 @@ const getFieldIcon = (fieldType: string, fieldData?: any) => {
     case 'label': return '🏷️';
     case 'date': return '📅';
     case 'select': return '📋';
+    case 'radio': return '🔘';
     case 'checkbox': return '☑️';
     case 'group': return '📦';
     case 'widget': return '🧩';
     case 'twoColumn': return '📐';
     default: return '❓';
   }
+};
+
+interface EditFieldModalProps {
+  field: TemplateField;
+  isOpen: boolean;
+  onSave: (field: TemplateField) => void;
+  onCancel: () => void;
+  resourceType: FhirResourceType;
+  availableFields: string[];
+}
+
+const EditFieldModal: React.FC<EditFieldModalProps> = ({
+  field,
+  isOpen,
+  onSave,
+  onCancel,
+  resourceType,
+  availableFields,
+}) => {
+  const [editedField, setEditedField] = useState(field);
+
+  // Reset editedField when field changes or modal opens
+  useEffect(() => {
+    setEditedField(field);
+  }, [field, isOpen]);
+
+  const handleSave = () => {
+    onSave(editedField);
+  };
+
+  const handleCancel = () => {
+    setEditedField(field); // Reset to original field
+    onCancel();
+  };
+
+  if (!isOpen) return null;
+
+  const modalContent = (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ zIndex: 9999 }}>
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
+           onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Edit {field.type === 'twoColumn' ? 'Two-Column Layout' : `${field.type} Field`}
+          </h2>
+          <button
+            onClick={handleCancel}
+            className="text-gray-400 hover:text-gray-600 text-xl"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Label
+            </label>
+            <input
+              type="text"
+              value={editedField.label}
+              onChange={(e) => setEditedField({ ...editedField, label: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Only show FHIR Path and Expression for fields that need data binding */}
+          {field.type !== 'label' && field.type !== 'twoColumn' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  FHIR Path
+                </label>
+                <input
+                  type="text"
+                  value={editedField.fhirPath || ''}
+                  onChange={(e) => setEditedField({ ...editedField, fhirPath: e.target.value })}
+                  placeholder="e.g., name[0].given[0]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Expression
+                  <span className="text-xs text-gray-500 ml-1">(overrides FHIR Path if provided)</span>
+                </label>
+                <input
+                  type="text"
+                  value={editedField.expression || ''}
+                  onChange={(e) => setEditedField({ ...editedField, expression: e.target.value })}
+                  placeholder="e.g., name[0].given[0] + ' ' + name[0].family"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <div className="text-xs text-gray-500 mt-2 p-3 bg-gray-50 rounded">
+                  <div className="mb-2">
+                    <strong>Available field names:</strong> {availableFields.join(', ')}
+                  </div>
+                  <div className="mb-2">
+                    <strong>FHIR Path Examples:</strong> 
+                    {resourceType === 'Patient' && (
+                      <>
+                        <code className="bg-blue-100 px-1 rounded ml-1">name[0].given[0] + ' ' + name[0].family</code>
+                        <code className="bg-blue-100 px-1 rounded ml-1">address[0].city + ', ' + address[0].state</code>
+                      </>
+                    )}
+                    {resourceType === 'HumanName' && (
+                      <>
+                        <code className="bg-blue-100 px-1 rounded ml-1">prefix[0] + ' ' + given[0] + ' ' + family</code>
+                        <code className="bg-blue-100 px-1 rounded ml-1">given[0] + ' ' + suffix[0]</code>
+                      </>
+                    )}
+                    {resourceType === 'Address' && (
+                      <>
+                        <code className="bg-blue-100 px-1 rounded ml-1">city + ', ' + state</code>
+                        <code className="bg-blue-100 px-1 rounded ml-1">line[0] + ', ' + city</code>
+                      </>
+                    )}
+                    {resourceType === 'ContactPoint' && (
+                      <>
+                        <code className="bg-blue-100 px-1 rounded ml-1">system + ': ' + value</code>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Common field properties */}
+          <div className="space-y-3 p-3 bg-gray-50 rounded">
+            <h4 className="text-sm font-medium text-gray-700">Display Options</h4>
+            
+            {/* Hide Label option for all field types */}
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id={`hideLabel-${field.id}`}
+                checked={editedField.hideLabel || false}
+                onChange={(e) => setEditedField({ ...editedField, hideLabel: e.target.checked })}
+                className="mr-2"
+              />
+              <label htmlFor={`hideLabel-${field.id}`} className="text-sm text-gray-700">
+                Hide label in preview
+              </label>
+            </div>
+
+            {/* Required option for input fields */}
+            {field.type !== 'label' && field.type !== 'twoColumn' && (
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id={`required-${field.id}`}
+                  checked={editedField.required || false}
+                  onChange={(e) => setEditedField({ ...editedField, required: e.target.checked })}
+                  className="mr-2"
+                />
+                <label htmlFor={`required-${field.id}`} className="text-sm text-gray-700">
+                  Required field
+                </label>
+              </div>
+            )}
+
+            {/* Hide if no value option for data-displaying fields */}
+            {field.type !== 'label' && field.type !== 'twoColumn' && (
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id={`hideIfEmpty-${field.id}`}
+                  checked={editedField.hideIfEmpty || false}
+                  onChange={(e) => setEditedField({ ...editedField, hideIfEmpty: e.target.checked })}
+                  className="mr-2"
+                />
+                <label htmlFor={`hideIfEmpty-${field.id}`} className="text-sm text-gray-700">
+                  Hide if no value (unchecked = show "N/A")
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* Label-specific fields */}
+          {field.type === 'label' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Font Size
+                </label>
+                <select
+                  value={(editedField as any).fontSize || 'md'}
+                  onChange={(e) => setEditedField({ ...editedField, fontSize: e.target.value as 'sm' | 'md' | 'lg' | 'xl' } as TemplateField)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="sm">Small</option>
+                  <option value="md">Medium</option>
+                  <option value="lg">Large</option>
+                  <option value="xl">Extra Large</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Font Weight
+                </label>
+                <select
+                  value={(editedField as any).fontWeight || 'normal'}
+                  onChange={(e) => setEditedField({ ...editedField, fontWeight: e.target.value as 'normal' | 'bold' } as TemplateField)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="normal">Normal</option>
+                  <option value="bold">Bold</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Color
+                </label>
+                <input
+                  type="color"
+                  value={(editedField as any).color || '#000000'}
+                  onChange={(e) => setEditedField({ ...editedField, color: e.target.value } as TemplateField)}
+                  className="w-full h-10 border border-gray-300 rounded-md"
+                />
+              </div>
+            </>
+          )}
+
+          {/* Select field options */}
+          {field.type === 'select' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Options (one per line, format: value|label)
+              </label>
+              <textarea
+                value={(editedField as any).options?.map((opt: any) => `${opt.value}|${opt.label}`).join('\n') || ''}
+                onChange={(e) => {
+                  const lines = e.target.value.split('\n').filter(line => line.trim());
+                  const options = lines.map(line => {
+                    const [value, label] = line.split('|');
+                    return { value: value?.trim() || '', label: label?.trim() || value?.trim() || '' };
+                  });
+                  setEditedField({ ...editedField, options } as TemplateField);
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                rows={4}
+                placeholder="option1|Option 1&#10;option2|Option 2"
+              />
+            </div>
+          )}
+
+          {/* Radio field options */}
+          {field.type === 'radio' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Options (one per line, format: value|label)
+                </label>
+                <textarea
+                  value={(editedField as any).options?.map((opt: any) => `${opt.value}|${opt.label}`).join('\n') || ''}
+                  onChange={(e) => {
+                    const lines = e.target.value.split('\n').filter(line => line.trim());
+                    const options = lines.map(line => {
+                      const [value, label] = line.split('|');
+                      return { value: value?.trim() || '', label: label?.trim() || value?.trim() || '' };
+                    });
+                    setEditedField({ ...editedField, options } as TemplateField);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={4}
+                  placeholder="option1|Option 1&#10;option2|Option 2"
+                />
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id={`inline-${field.id}`}
+                  checked={(editedField as any).inline || false}
+                  onChange={(e) => setEditedField({ ...editedField, inline: e.target.checked } as TemplateField)}
+                  className="mr-2"
+                />
+                <label htmlFor={`inline-${field.id}`} className="text-sm text-gray-700">
+                  Display options horizontally (inline)
+                </label>
+              </div>
+            </>
+          )}
+
+          {/* Widget field options */}
+          {field.type === 'widget' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Widget Resource Type
+                </label>
+                <select
+                  value={(editedField as any).widgetResourceType || 'HumanName'}
+                  onChange={(e) => setEditedField({ ...editedField, widgetResourceType: e.target.value as FhirResourceType } as TemplateField)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="HumanName">HumanName</option>
+                  <option value="ContactPoint">ContactPoint</option>
+                  <option value="Address">Address</option>
+                  <option value="Patient">Patient</option>
+                </select>
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id={`multiple-${field.id}`}
+                  checked={(editedField as any).multiple || false}
+                  onChange={(e) => setEditedField({ ...editedField, multiple: e.target.checked } as TemplateField)}
+                  className="mr-2"
+                />
+                <label htmlFor={`multiple-${field.id}`} className="text-sm text-gray-700">
+                  Allow multiple instances
+                </label>
+              </div>
+            </>
+          )}
+
+          {/* Two Column field options */}
+          {field.type === 'twoColumn' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Left Column Width (%)
+                </label>
+                <input
+                  type="number"
+                  min="20"
+                  max="80"
+                  value={(editedField as any).leftWidth || 50}
+                  onChange={(e) => {
+                    const twoColField = editedField as TwoColumnField;
+                    setEditedField({ 
+                      ...twoColField, 
+                      leftWidth: parseInt(e.target.value) || 50,
+                      leftColumn: twoColField.leftColumn || [],
+                      rightColumn: twoColField.rightColumn || []
+                    } as TemplateField);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Gap Between Columns (px)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="48"
+                  value={(editedField as any).gap || 16}
+                  onChange={(e) => {
+                    const twoColField = editedField as TwoColumnField;
+                    setEditedField({ 
+                      ...twoColField, 
+                      gap: parseInt(e.target.value) || 16,
+                      leftColumn: twoColField.leftColumn || [],
+                      rightColumn: twoColField.rightColumn || []
+                    } as TemplateField);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="text-sm text-gray-600 p-3 bg-blue-50 rounded">
+                <p><strong>Note:</strong> Fields can be dragged into the left and right columns of this container after it's created.</p>
+                <p className="mt-1"><strong>📱 Responsive:</strong> On mobile devices, columns will stack vertically for better readability.</p>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Modal Footer */}
+        <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
+          <button
+            onClick={handleCancel}
+            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return ReactDOM.createPortal(modalContent, document.body);
 };
 
 interface TwoColumnContainerProps {
@@ -200,7 +590,12 @@ const TwoColumnContainer: React.FC<TwoColumnContainerProps> = ({
     return (
       <div className="border border-dashed border-gray-300 rounded bg-gray-50 min-h-[100px] p-2">
         <div className="text-xs text-gray-500 mb-2 text-center font-medium">
-          {column === 'left' ? 'Left Column' : 'Right Column'} ({columnFields.length} fields)
+          <span className="md:hidden">
+            {column === 'left' ? '📍 First Section' : '📍 Second Section'} ({columnFields.length} fields)
+          </span>
+          <span className="hidden md:inline">
+            {column === 'left' ? 'Left Column' : 'Right Column'} ({columnFields.length} fields)
+          </span>
         </div>
         
         <SortableContext 
@@ -247,7 +642,7 @@ const TwoColumnContainer: React.FC<TwoColumnContainerProps> = ({
   return (
     <div className="mt-3 border-t pt-3">
       <div 
-        className="grid gap-2" 
+        className="flex flex-col md:grid md:gap-2 space-y-4 md:space-y-0" 
         style={{ 
           gridTemplateColumns: `${field.leftWidth || 50}% 1fr`,
           gap: `${field.gap || 16}px`
@@ -329,22 +724,16 @@ const SortableField: React.FC<SortableFieldProps> = ({
     transition,
   };
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedField, setEditedField] = useState(field);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const handleSave = () => {
-    onEdit(editedField);
-    setIsEditing(false);
+  const handleSaveEdit = (updatedField: TemplateField) => {
+    onEdit(updatedField);
+    setIsEditModalOpen(false);
   };
 
-  const handleCancel = () => {
-    setEditedField(field);
-    setIsEditing(false);
+  const handleCancelEdit = () => {
+    setIsEditModalOpen(false);
   };
-
-
-
-
 
   const renderAdditionalConfigs = () => {
     const configs: string[] = [];
@@ -384,7 +773,7 @@ const SortableField: React.FC<SortableFieldProps> = ({
             }
           }
         } catch (error) {
-          console.error('Failed to load template name:', error);
+          // Ignore error, just don't show template name
         }
       }
       if (widgetField.multiple) {
@@ -395,11 +784,22 @@ const SortableField: React.FC<SortableFieldProps> = ({
     // Select field configurations
     if (field.type === 'select') {
       const selectField = field as any;
+      if (selectField.options && selectField.options.length > 0) {
+        configs.push(`${selectField.options.length} options`);
+      }
       if (selectField.multiple) {
         configs.push("Multiple selection");
       }
-      if (selectField.options && selectField.options.length > 0) {
-        configs.push(`${selectField.options.length} options`);
+    }
+
+    // Radio field configurations
+    if (field.type === 'radio') {
+      const radioField = field as any;
+      if (radioField.options && radioField.options.length > 0) {
+        configs.push(`${radioField.options.length} options`);
+      }
+      if (radioField.inline) {
+        configs.push("Inline layout");
       }
     }
 
@@ -418,7 +818,7 @@ const SortableField: React.FC<SortableFieldProps> = ({
     // Date field configurations
     if (field.type === 'date') {
       const dateField = field as any;
-      if (dateField.format) {
+      if (dateField.format && dateField.format !== 'YYYY-MM-DD') {
         configs.push(`Format: ${dateField.format}`);
       }
     }
@@ -434,11 +834,14 @@ const SortableField: React.FC<SortableFieldProps> = ({
     // Group field configurations
     if (field.type === 'group') {
       const groupField = field as any;
+      if (groupField.children && groupField.children.length > 0) {
+        configs.push(`${groupField.children.length} child fields`);
+      }
       if (groupField.collapsible) {
         configs.push("Collapsible");
       }
-      if (groupField.children && groupField.children.length > 0) {
-        configs.push(`${groupField.children.length} child fields`);
+      if (groupField.defaultExpanded) {
+        configs.push("Expanded by default");
       }
     }
 
@@ -457,296 +860,15 @@ const SortableField: React.FC<SortableFieldProps> = ({
     if (configs.length === 0) return null;
 
     return (
-      <div className="text-xs text-gray-500 mb-2">
-        <div className="flex flex-wrap gap-1">
-          {configs.map((config, index) => (
-            <span
-              key={index}
-              className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-medium"
-            >
-              {config}
-            </span>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const renderEditForm = () => {
-    return (
-      <div className="space-y-3 p-3 bg-gray-50 rounded">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Label
-          </label>
-          <input
-            type="text"
-            value={editedField.label}
-            onChange={(e) => setEditedField({ ...editedField, label: e.target.value })}
-            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-          />
-        </div>
-
-        {/* Only show FHIR Path and Expression for fields that need data binding */}
-        {field.type !== 'label' && field.type !== 'twoColumn' && (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                FHIR Path
-              </label>
-              <input
-                type="text"
-                value={editedField.fhirPath || ''}
-                onChange={(e) => setEditedField({ ...editedField, fhirPath: e.target.value })}
-                placeholder="e.g., name[0].given[0]"
-                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Expression
-                <span className="text-xs text-gray-500 ml-1">(overrides FHIR Path if provided)</span>
-              </label>
-              <input
-                type="text"
-                value={editedField.expression || ''}
-                onChange={(e) => setEditedField({ ...editedField, expression: e.target.value })}
-                placeholder="e.g., name[0].given[0] + ' ' + name[0].family"
-                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-              />
-              <div className="text-xs text-gray-500 mt-1">
-                <div className="mb-1">
-                  <strong>Available field names:</strong> {availableFields.join(', ')}
-                </div>
-                <div className="mb-1">
-                  <strong>FHIR Path Examples:</strong> 
-                  {resourceType === 'Patient' && (
-                <>
-                  <code className="bg-blue-100 px-1 rounded ml-1">name[0].given[0] + ' ' + name[0].family</code>
-                  <code className="bg-blue-100 px-1 rounded ml-1">address[0].city + ', ' + address[0].state</code>
-                </>
-              )}
-              {resourceType === 'HumanName' && (
-                <>
-                  <code className="bg-blue-100 px-1 rounded ml-1">prefix[0] + ' ' + given[0] + ' ' + family</code>
-                  <code className="bg-blue-100 px-1 rounded ml-1">given[0] + ' ' + suffix[0]</code>
-                </>
-              )}
-              {resourceType === 'Address' && (
-                <>
-                  <code className="bg-blue-100 px-1 rounded ml-1">city + ', ' + state</code>
-                  <code className="bg-blue-100 px-1 rounded ml-1">line[0] + ', ' + city</code>
-                </>
-              )}
-              {resourceType === 'ContactPoint' && (
-                <>
-                  <code className="bg-blue-100 px-1 rounded ml-1">system + ': ' + value</code>
-                </>
-              )}
-            </div>
-            <div className="mb-1">
-              <strong>Field Name Examples:</strong> 
-              {resourceType === 'Patient' && (
-                <>
-                  <code className="bg-gray-100 px-1 rounded ml-1">firstName + ' ' + lastName</code>
-                  <code className="bg-gray-100 px-1 rounded ml-1">city + ', ' + state</code>
-                </>
-              )}
-              {resourceType === 'HumanName' && (
-                <>
-                  <code className="bg-gray-100 px-1 rounded ml-1">prefix + ' ' + firstName + ' ' + lastName</code>
-                  <code className="bg-gray-100 px-1 rounded ml-1">firstName + ' ' + suffix</code>
-                </>
-              )}
-              {resourceType === 'Address' && (
-                <>
-                  <code className="bg-gray-100 px-1 rounded ml-1">city + ', ' + state</code>
-                  <code className="bg-gray-100 px-1 rounded ml-1">line1 + ', ' + city</code>
-                </>
-              )}
-              {resourceType === 'ContactPoint' && (
-                <>
-                  <code className="bg-gray-100 px-1 rounded ml-1">system + ': ' + value</code>
-                </>
-              )}
-            </div>
-            <div className="text-xs text-blue-600">
-              <div>Resource type: {resourceType}</div>
-              <div className="mt-1">
-                💡 <strong>Tip:</strong> You can use either FHIR paths (e.g., <code>name[0].given[0]</code>) or field names (e.g., <code>firstName</code>)
-              </div>
-            </div>
-          </div>
-            </div>
-          </>
-        )}
-
-        {/* Only show "Hide if no value" for fields that display data values */}
-        {field.type !== 'label' && field.type !== 'twoColumn' && (
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id={`hideIfEmpty-${field.id}`}
-              checked={editedField.hideIfEmpty || false}
-              onChange={(e) => setEditedField({ ...editedField, hideIfEmpty: e.target.checked })}
-              className="mr-2"
-            />
-            <label htmlFor={`hideIfEmpty-${field.id}`} className="text-sm text-gray-700">
-              Hide if no value (unchecked = show "N/A")
-            </label>
-          </div>
-        )}
-
-        {field.type === 'label' && (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Font Size
-              </label>
-              <select
-                value={(editedField as any).fontSize || 'md'}
-                onChange={(e) => setEditedField({ ...editedField, fontSize: e.target.value as 'sm' | 'md' | 'lg' | 'xl' } as TemplateField)}
-                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-              >
-                <option value="sm">Small</option>
-                <option value="md">Medium</option>
-                <option value="lg">Large</option>
-                <option value="xl">Extra Large</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Font Weight
-              </label>
-              <select
-                value={(editedField as any).fontWeight || 'normal'}
-                onChange={(e) => setEditedField({ ...editedField, fontWeight: e.target.value as 'normal' | 'bold' } as TemplateField)}
-                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-              >
-                <option value="normal">Normal</option>
-                <option value="bold">Bold</option>
-              </select>
-            </div>
-          </>
-        )}
-
-        {field.type === 'widget' && (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Resource Type
-              </label>
-              <select
-                value={(editedField as any).widgetResourceType || 'HumanName'}
-                onChange={(e) => setEditedField({ 
-                  ...editedField, 
-                  widgetResourceType: e.target.value as FhirResourceType,
-                  widgetTemplateId: '' // Reset template selection when resource type changes
-                } as TemplateField)}
-                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-              >
-                <option value="HumanName">HumanName</option>
-                <option value="ContactPoint">ContactPoint</option>
-                <option value="Address">Address</option>
-              </select>
-            </div>
-            
-            <div>
-              <TemplateSelector
-                selectedTemplateId={(editedField as any).widgetTemplateId || ''}
-                resourceType={(editedField as any).widgetResourceType || 'HumanName'}
-                onTemplateSelect={(templateId) => {
-                  setEditedField({ 
-                    ...editedField, 
-                    widgetTemplateId: templateId 
-                  } as TemplateField);
-                }}
-              />
-            </div>
-
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id={`multiple-${field.id}`}
-                checked={(editedField as any).multiple || false}
-                onChange={(e) => setEditedField({ 
-                  ...editedField, 
-                  multiple: e.target.checked 
-                } as TemplateField)}
-                className="mr-2"
-              />
-              <label htmlFor={`multiple-${field.id}`} className="text-sm text-gray-700">
-                Allow multiple instances
-              </label>
-            </div>
-          </>
-        )}
-
-        {field.type === 'twoColumn' && (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Left Column Width (%)
-              </label>
-              <input
-                type="number"
-                min="20"
-                max="80"
-                value={(editedField as any).leftWidth || 50}
-                onChange={(e) => {
-                  const twoColField = editedField as TwoColumnField;
-                  setEditedField({ 
-                    ...twoColField, 
-                    leftWidth: parseInt(e.target.value) || 50,
-                    leftColumn: twoColField.leftColumn || [],
-                    rightColumn: twoColField.rightColumn || []
-                  } as TemplateField);
-                }}
-                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Gap Between Columns (px)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="48"
-                value={(editedField as any).gap || 16}
-                onChange={(e) => {
-                  const twoColField = editedField as TwoColumnField;
-                  setEditedField({ 
-                    ...twoColField, 
-                    gap: parseInt(e.target.value) || 16,
-                    leftColumn: twoColField.leftColumn || [],
-                    rightColumn: twoColField.rightColumn || []
-                  } as TemplateField);
-                }}
-                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-              />
-            </div>
-            <div className="text-xs text-gray-500 mt-2">
-              <p><strong>Note:</strong> Fields can be dragged into the left and right columns of this container after it's created.</p>
-            </div>
-          </>
-        )}
-
-        <div className="flex space-x-2">
-          <button
-            onClick={handleSave}
-            className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+      <div className="flex flex-wrap gap-1 mb-2">
+        {configs.map((config, index) => (
+          <span
+            key={index}
+            className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded"
           >
-            Save
-          </button>
-          <button
-            onClick={handleCancel}
-            className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700"
-          >
-            Cancel
-          </button>
-        </div>
+            {config}
+          </span>
+        ))}
       </div>
     );
   };
@@ -762,32 +884,42 @@ const SortableField: React.FC<SortableFieldProps> = ({
       } ${isDragging ? 'opacity-50' : ''}`}
       onClick={() => onSelect(field)}
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-2">
-          <span className="cursor-grab active:cursor-grabbing">
+      <EditFieldModal
+        field={field}
+        isOpen={isEditModalOpen}
+        onSave={handleSaveEdit}
+        onCancel={handleCancelEdit}
+        resourceType={resourceType}
+        availableFields={availableFields}
+      />
+      
+      <div 
+        className="flex items-center justify-between mb-2"
+      >
+        <div 
+          className="flex items-center space-x-2 flex-1 cursor-grab active:cursor-grabbing"
+          {...attributes}
+          {...listeners}
+        >
+          <span className="text-gray-400">
             ⋮⋮
           </span>
-          <div 
-            className="flex items-center space-x-2 cursor-grab active:cursor-grabbing"
-            {...attributes}
-            {...listeners}
-          >
-            <span>{getFieldIcon(field.type, field)}</span>
-            <div>
-              <span className="font-medium text-gray-900">{field.label}</span>
-            </div>
+          <span>{getFieldIcon(field.type, field)}</span>
+          <div>
+            <span className="font-medium text-gray-900">{field.label}</span>
           </div>
         </div>
-        <div className="flex space-x-1">
+        <div 
+          className="flex space-x-1"
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (!isEditing) {
-                setEditedField(field); // Reset to current field state when starting edit
-              }
-              setIsEditing(!isEditing);
+              setIsEditModalOpen(true);
             }}
-            className="text-gray-500 hover:text-blue-600 text-sm"
+            className="text-gray-500 hover:text-blue-600 text-sm cursor-pointer"
+            title={`Edit ${field.label}`}
           >
             ✏️
           </button>
@@ -796,7 +928,8 @@ const SortableField: React.FC<SortableFieldProps> = ({
               e.stopPropagation();
               onDelete(field.id);
             }}
-            className="text-gray-500 hover:text-red-600 text-sm"
+            className="text-gray-500 hover:text-red-600 text-sm cursor-pointer"
+            title={`Delete ${field.label}`}
           >
             🗑️
           </button>
@@ -818,7 +951,7 @@ const SortableField: React.FC<SortableFieldProps> = ({
       {renderAdditionalConfigs()}
 
       {/* Two Column Layout Interactive */}
-      {field.type === 'twoColumn' && !isEditing && (
+      {field.type === 'twoColumn' && (
         <TwoColumnContainer 
           field={field as TwoColumnField}
           onFieldUpdate={onEdit}
@@ -828,8 +961,6 @@ const SortableField: React.FC<SortableFieldProps> = ({
           availableFields={availableFields}
         />
       )}
-
-      {isEditing && renderEditForm()}
     </div>
   );
 };
@@ -858,8 +989,7 @@ const DesignCanvas: React.FC<DesignCanvasProps> = ({
   // Force scrollbar visibility when component mounts or fields change
   useEffect(() => {
     if (scrollContainerRef.current) {
-      const cleanup = forceScrollbarVisibility(scrollContainerRef.current);
-      return cleanup;
+      forceScrollbarVisibility(scrollContainerRef.current);
     }
   }, [fields.length]);
 
@@ -874,14 +1004,13 @@ const DesignCanvas: React.FC<DesignCanvasProps> = ({
     if (over && active.id !== over.id) {
       const oldIndex = fields.findIndex((field) => field.id === active.id);
       const newIndex = fields.findIndex((field) => field.id === over.id);
-      
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const reorderedFields = arrayMove(fields, oldIndex, newIndex).map((field, index) => ({
-          ...field,
-          order: index,
-        }));
-        onFieldsChange(reorderedFields);
-      }
+
+      const reorderedFields = arrayMove(fields, oldIndex, newIndex).map((field, index) => ({
+        ...field,
+        order: index,
+      }));
+
+      onFieldsChange(reorderedFields);
     }
   };
 
@@ -914,13 +1043,14 @@ const DesignCanvas: React.FC<DesignCanvasProps> = ({
         const updatedFields = [...fields];
         updatedFields.splice(position, 0, newField);
         
-        // Reorder all fields to maintain sequential order
+        // Update order for all fields
         const reorderedFields = updatedFields.map((field, index) => ({
           ...field,
-          order: index
+          order: index,
         }));
         
         onFieldsChange(reorderedFields);
+        onFieldSelect(newField);
       }
     } catch (error) {
       console.error('Failed to parse drop data:', error);
@@ -952,119 +1082,75 @@ const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
   return (
     <div className="flex-1 bg-gray-50 flex flex-col relative h-full">
-      <div className="p-4 bg-white border-b border-gray-200 flex-shrink-0">
-        <h2 className="text-lg font-medium text-gray-900">Design Canvas</h2>
+      <div className="p-4 border-b border-gray-200 bg-white">
+        <h3 className="text-lg font-medium text-gray-900">Design Canvas</h3>
         <p className="text-sm text-gray-600">
-          Drag field types from the left panel to add them, or reorder existing fields
+          Drag fields from the left panel to add them to your template
         </p>
-        {fields.length > 3 && (
-          <div className="mt-2 flex items-center text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-              <path fillRule="evenodd" d="M5.293 6.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 3.414 6.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-              <path fillRule="evenodd" d="M5.293 13.293a1 1 0 001.414 0L10 9.586l3.293 3.707a1 1 0 001.414-1.414l-4-4a1 1 0 00-1.414 0l-4 4a1 1 0 000 1.414z" clipRule="evenodd" />
-            </svg>
-            Scrollable area - {fields.length} fields
-          </div>
-        )}
       </div>
-      
-      <div
+
+      <div 
         ref={scrollContainerRef}
-        className="flex-1 p-6 pb-8 overflow-y-auto design-canvas-scroll"
+        className="flex-1 overflow-y-auto p-6 space-y-4 design-canvas-scroll"
         onDragOver={handleDragOver}
-        style={{ 
-          scrollbarWidth: 'auto',
-          scrollbarColor: '#888 #f1f1f1',
-          minHeight: 0
-        }}
       >
-        {fields.length === 0 ? (
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={sortedFields.map((field) => field.id)} strategy={verticalListSortingStrategy}>
+            <DropZone position={0} onDrop={handleDropAtPosition} isActive={activeDropZone === 0} />
+            
+            {sortedFields.map((field, index) => (
+              <div key={field.id}>
+                <SortableField
+                  field={field}
+                  isSelected={selectedField?.id === field.id}
+                  onSelect={onFieldSelect}
+                  onDelete={handleFieldDelete}
+                  onEdit={handleFieldEdit}
+                  resourceType={resourceType}
+                  availableFields={availableFields}
+                />
+                <DropZone 
+                  position={index + 1} 
+                  onDrop={handleDropAtPosition} 
+                  isActive={activeDropZone === index + 1} 
+                />
+              </div>
+            ))}
+          </SortableContext>
+
+          <DragOverlay>
+            {activeId ? (
+              <div className="bg-white border-2 border-blue-500 rounded-lg p-3 opacity-95 rotate-2 shadow-lg">
+                {/* Simplified field preview */}
+                <div className="flex items-center space-x-2">
+                  <span>⋮⋮</span>
+                  <span>{getFieldIcon(fields.find((f) => f.id === activeId)?.type || '', fields.find((f) => f.id === activeId))}</span>
+                  <span className="font-medium">{fields.find((f) => f.id === activeId)?.label}</span>
+                </div>
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+
+        {fields.length === 0 && (
           <div className="text-center py-12">
-            <svg
-              className="mx-auto h-12 w-12 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-              />
-            </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No fields yet</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Drag field types from the left panel to start building your template.
+            <div className="text-gray-400 text-lg mb-2">📝</div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No fields yet</h3>
+            <p className="text-gray-600">
+              Drag fields from the left panel to start building your template
             </p>
           </div>
-        ) : (
-          <DndContext
-            sensors={sensors}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext items={sortedFields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
-              {/* Drop zone before first field */}
-              <DropZone
-                position={0}
-                onDrop={handleDropAtPosition}
-                isActive={activeDropZone === 0}
-              />
-              
-              {sortedFields.map((field, index) => (
-                <div key={field.id}>
-                  <SortableField
-                    field={field}
-                    isSelected={selectedField?.id === field.id}
-                    onSelect={onFieldSelect}
-                    onDelete={handleFieldDelete}
-                    onEdit={handleFieldEdit}
-                    resourceType={resourceType}
-                    availableFields={availableFields}
-                  />
-                  
-                  {/* Drop zone after each field */}
-                  <DropZone
-                    position={index + 1}
-                    onDrop={handleDropAtPosition}
-                    isActive={activeDropZone === index + 1}
-                  />
-                </div>
-              ))}
-              
-              {/* Add extra spacing to force scroll when many fields */}
-              {sortedFields.length > 5 && (
-                <div className="mt-8 p-4 bg-blue-50 rounded border text-center text-sm text-blue-600">
-                  <p>✓ Scrollable area - {sortedFields.length} fields total</p>
-                  <p className="text-xs mt-1">Scroll up to see all fields</p>
-                </div>
-              )}
-            </SortableContext>
-            
-            <DragOverlay>
-              {activeId ? (
-                <div className="bg-white border-2 border-blue-500 rounded-lg p-3 opacity-90 shadow-lg">
-                  <div className="flex items-center space-x-2">
-                    <span>⋮⋮</span>
-                    <span className="font-medium text-gray-900">
-                      {sortedFields.find((f) => f.id === activeId)?.label}
-                    </span>
-                  </div>
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
         )}
       </div>
-      
-      {/* Scroll Indicator */}
+
+      {/* Scroll indicator */}
       {fields.length > 3 && (
-        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-100 border border-blue-300 rounded-full p-1 text-blue-700 z-10">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
+        <div className="absolute bottom-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-xs">
+          {fields.length} fields
         </div>
       )}
     </div>

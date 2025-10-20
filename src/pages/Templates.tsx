@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import type { Template, FhirResourceType } from '../shared/types';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import type { Template, FhirResourceType, Workspace } from '../shared/types';
 import { getDefaultFieldsForResourceType } from '../shared/defaultFields';
 import { getSampleDataByResourceType } from '../shared/sampleData';
+import WorkspaceManager from '../components/WorkspaceManager';
 
 const Templates: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedResourceType, setSelectedResourceType] = useState<FhirResourceType>('Patient');
   const [filterResourceType, setFilterResourceType] = useState<FhirResourceType | 'All'>('All');
+  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
+  const [showWorkspacePanel, setShowWorkspacePanel] = useState(true);
 
   const getResourceTypeIcon = (resourceType: FhirResourceType) => {
     switch (resourceType) {
@@ -34,18 +38,84 @@ const Templates: React.FC = () => {
 
   useEffect(() => {
     loadTemplates();
-  }, []);
+  }, [currentWorkspace]);
+
+  // Handle workspace parameter from URL
+  useEffect(() => {
+    const workspaceParam = searchParams.get('workspace');
+    if (workspaceParam && !currentWorkspace) {
+      // Load workspaces and set the current one based on URL parameter
+      const storedWorkspaces = localStorage.getItem('fhir-workspaces');
+      if (storedWorkspaces) {
+        try {
+          const workspaces = JSON.parse(storedWorkspaces);
+          const targetWorkspace = workspaces.find((w: Workspace) => w.id === workspaceParam);
+          if (targetWorkspace) {
+            setCurrentWorkspace(targetWorkspace);
+          }
+        } catch (error) {
+          console.error('Failed to load workspace from URL parameter:', error);
+        }
+      }
+    }
+  }, [searchParams, currentWorkspace]);
 
   const loadTemplates = () => {
     const stored = localStorage.getItem('fhir-templates');
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        setTemplates(parsed.templates || []);
+        const allTemplates = parsed.templates || [];
+        
+        // Migrate old templates to default workspace if they don't have workspaceId
+        const migratedTemplates = allTemplates.map((template: Template) => ({
+          ...template,
+          workspaceId: template.workspaceId || 'default-workspace'
+        }));
+        
+        // Filter templates by current workspace
+        if (currentWorkspace) {
+          const workspaceTemplates = migratedTemplates.filter(
+            (template: Template) => template.workspaceId === currentWorkspace.id
+          );
+          setTemplates(workspaceTemplates);
+        } else {
+          setTemplates(migratedTemplates);
+        }
       } catch (error) {
         console.error('Failed to load templates:', error);
         setTemplates([]);
       }
+    }
+  };
+
+  // Workspace management functions
+  const handleWorkspaceSelect = (workspace: Workspace) => {
+    setCurrentWorkspace(workspace);
+  };
+
+  const handleWorkspaceCreate = (_workspaceData: Omit<Workspace, 'id' | 'createdAt' | 'updatedAt'>) => {
+    // Workspace creation is handled in WorkspaceManager
+    loadTemplates();
+  };
+
+  const handleWorkspaceUpdate = (workspace: Workspace) => {
+    if (currentWorkspace?.id === workspace.id) {
+      setCurrentWorkspace(workspace);
+    }
+  };
+
+  const handleWorkspaceDelete = (workspaceId: string) => {
+    // Delete all templates in this workspace
+    const stored = localStorage.getItem('fhir-templates');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      const allTemplates = parsed.templates || [];
+      const remainingTemplates = allTemplates.filter(
+        (template: Template) => template.workspaceId !== workspaceId
+      );
+      localStorage.setItem('fhir-templates', JSON.stringify({ templates: remainingTemplates }));
+      loadTemplates();
     }
   };
 
@@ -62,6 +132,7 @@ const Templates: React.FC = () => {
       ...template,
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: `${template.name} (Copy)`,
+      workspaceId: currentWorkspace?.id || template.workspaceId, // Keep in current workspace
       sampleData: template.sampleData, // Include sample data in the copy
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -87,8 +158,12 @@ const Templates: React.FC = () => {
   };
 
   const handleCreateTemplate = () => {
-    // Navigate to create page with resource type parameter
-    navigate(`/create?resourceType=${selectedResourceType}`);
+    // Navigate to create page with resource type and workspace parameters
+    const params = new URLSearchParams({
+      resourceType: selectedResourceType,
+      workspaceId: currentWorkspace?.id || 'default-workspace'
+    });
+    navigate(`/create?${params.toString()}`);
     setShowCreateModal(false);
   };
 
@@ -119,6 +194,7 @@ const Templates: React.FC = () => {
         name: `Sample ${resourceType} Template`,
         description: `Default template for ${resourceType} resource with common fields and sample data`,
         resourceType,
+        workspaceId: currentWorkspace?.id || 'default-workspace',
         fields: defaultFields,
         sampleData,
         createdAt: new Date().toISOString(),
@@ -134,10 +210,16 @@ const Templates: React.FC = () => {
       return;
     }
     
-    // Add all new templates to existing ones
-    const updatedTemplates = [...templates, ...newTemplates];
-    setTemplates(updatedTemplates);
-    localStorage.setItem('fhir-templates', JSON.stringify({ templates: updatedTemplates }));
+    // Get all templates from localStorage to preserve other workspaces
+    const stored = localStorage.getItem('fhir-templates');
+    const allTemplates = stored ? JSON.parse(stored).templates || [] : [];
+    
+    // Add new templates to all templates
+    const updatedAllTemplates = [...allTemplates, ...newTemplates];
+    localStorage.setItem('fhir-templates', JSON.stringify({ templates: updatedAllTemplates }));
+    
+    // Reload templates to refresh the view
+    loadTemplates();
     
     // Show success message
     const resourceNames = newTemplates.map(t => t.resourceType).join(', ');
@@ -155,13 +237,21 @@ const Templates: React.FC = () => {
         reader.onload = (e) => {
           try {
             const template: Template = JSON.parse(e.target?.result as string);
-            // Generate new ID to avoid conflicts
+            // Generate new ID and assign to current workspace
             template.id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            template.workspaceId = currentWorkspace?.id || 'default-workspace';
             template.updatedAt = new Date().toISOString();
             
+            // Get all templates from localStorage and add the new one
+            const stored = localStorage.getItem('fhir-templates');
+            const allTemplates = stored ? JSON.parse(stored).templates || [] : [];
+            const updatedAllTemplates = [...allTemplates, template];
+            
+            localStorage.setItem('fhir-templates', JSON.stringify({ templates: updatedAllTemplates }));
+            
+            // Update local state with current workspace templates
             const updatedTemplates = [...templates, template];
             setTemplates(updatedTemplates);
-            localStorage.setItem('fhir-templates', JSON.stringify({ templates: updatedTemplates }));
           } catch (error) {
             alert('Failed to import template. Please check the file format.');
           }
@@ -182,14 +272,39 @@ const Templates: React.FC = () => {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">FHIR Templates</h1>
-            <p className="mt-2 text-gray-600">
-              Manage your FHIR Patient display templates
-            </p>
+    <div className="flex h-screen bg-gray-100">
+      {/* Workspace Panel */}
+      {showWorkspacePanel && (
+        <WorkspaceManager
+          currentWorkspace={currentWorkspace}
+          onWorkspaceSelect={handleWorkspaceSelect}
+          onWorkspaceCreate={handleWorkspaceCreate}
+          onWorkspaceUpdate={handleWorkspaceUpdate}
+          onWorkspaceDelete={handleWorkspaceDelete}
+        />
+      )}
+      
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setShowWorkspacePanel(!showWorkspacePanel)}
+              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+              title="Toggle Workspace Panel"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">FHIR Templates</h1>
+              {currentWorkspace && (
+                <p className="text-sm text-gray-600">
+                  {currentWorkspace.icon} {currentWorkspace.name}
+                </p>
+              )}
+            </div>
           </div>
           <div className="flex gap-3">
             <button
@@ -206,7 +321,10 @@ const Templates: React.FC = () => {
             </button>
           </div>
         </div>
-
+        
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-7xl mx-auto">
+      <div className="mb-8">
         <div className="flex gap-4 items-center">
           <div className="flex-1 relative">
             <input
@@ -486,6 +604,9 @@ const Templates: React.FC = () => {
           </div>
         </div>
       )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

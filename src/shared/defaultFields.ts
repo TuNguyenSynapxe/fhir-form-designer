@@ -61,6 +61,24 @@ const getPrimitiveFieldConfigs = (): FieldConfig[] => [
     }
   },
   {
+    type: 'radio',
+    label: 'Radio Buttons',
+    icon: '🔘',
+    description: 'Radio button selection',
+    defaultProps: {
+      type: 'radio',
+      label: 'Radio Field',
+      fhirPath: '',
+      options: [
+        { value: 'option1', label: 'Option 1' },
+        { value: 'option2', label: 'Option 2' }
+      ],
+      inline: false,
+      required: false,
+      order: 0
+    }
+  },
+  {
     type: 'checkbox',
     label: 'Checkbox Field',
     icon: '☑️',

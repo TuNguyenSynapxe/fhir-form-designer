@@ -89,7 +89,7 @@ export interface FhirAddress {
 export type FhirResource = FhirPatient | FhirHumanName | FhirContactPoint | FhirAddress;
 
 // Template Field Types
-export type FieldType = "text" | "label" | "date" | "select" | "checkbox" | "group" | "widget" | "twoColumn";
+export type FieldType = "text" | "label" | "date" | "select" | "radio" | "checkbox" | "group" | "widget" | "twoColumn";
 
 export interface BaseField {
   id: string;
@@ -100,6 +100,7 @@ export interface BaseField {
   required?: boolean;
   order: number;
   hideIfEmpty?: boolean; // If true, hide field when no value; if false, show "N/A"
+  hideLabel?: boolean; // If true, hide the label when rendering in preview
 }
 
 export interface TextField extends BaseField {
@@ -130,6 +131,15 @@ export interface SelectField extends BaseField {
   multiple?: boolean;
 }
 
+export interface RadioField extends BaseField {
+  type: "radio";
+  options: Array<{
+    value: string;
+    label: string;
+  }>;
+  inline?: boolean; // Whether to display radio buttons horizontally or vertically
+}
+
 export interface CheckboxField extends BaseField {
   type: "checkbox";
   defaultValue?: boolean;
@@ -157,7 +167,19 @@ export interface TwoColumnField extends BaseField {
   gap?: number; // Gap between columns in pixels (default 16)
 }
 
-export type TemplateField = TextField | LabelField | DateField | SelectField | CheckboxField | GroupField | WidgetField | TwoColumnField;
+export type TemplateField = TextField | LabelField | DateField | SelectField | RadioField | CheckboxField | GroupField | WidgetField | TwoColumnField;
+
+// Workspace Definition
+export interface Workspace {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string; // Theme color for workspace
+  icon?: string; // Emoji or icon for workspace
+  createdAt: string;
+  updatedAt: string;
+  isDefault?: boolean; // Default workspace for new users
+}
 
 // Template Definition
 export interface Template {
@@ -165,11 +187,13 @@ export interface Template {
   name: string;
   description?: string;
   resourceType: FhirResourceType;
+  workspaceId: string; // Reference to workspace
   fields: TemplateField[];
   sampleData?: FhirResource;
   createdAt: string;
   updatedAt: string;
   version: string;
+  tags?: string[]; // Optional tags for organization within workspace
 }
 
 // Drag and Drop Types
@@ -213,12 +237,7 @@ export interface ToolbarProps {
   onPreview?: () => void;
 }
 
-export interface FhirViewerProps {
-  template: Template;
-  data: FhirResource;
-  mode?: "view" | "edit";
-  onDataChange?: (data: FhirResource) => void;
-}
+
 
 // Storage Types
 export interface TemplateStorage {
