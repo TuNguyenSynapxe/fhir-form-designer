@@ -176,36 +176,4 @@ const FhirWidget: React.FC<FhirWidgetProps> = ({
   );
 };
 
-// Static render method for vanilla JS usage
-(FhirWidget as any).render = (props: FhirWidgetProps, container: string | Element) => {
-  if (typeof window === 'undefined') return;
-  
-  const React = (window as any).React;
-  const ReactDOM = (window as any).ReactDOM;
-  
-  if (!React || !ReactDOM) {
-    throw new Error('React and ReactDOM must be available globally for FhirWidget.render()');
-  }
-  
-  const targetElement = typeof container === 'string' 
-    ? document.querySelector(container)
-    : container;
-    
-  if (!targetElement) {
-    throw new Error(`Container element not found: ${container}`);
-  }
-  
-  // Support both React 18+ createRoot and legacy render
-  if (ReactDOM.createRoot) {
-    // React 18+ with createRoot
-    const root = ReactDOM.createRoot(targetElement);
-    root.render(React.createElement(FhirWidget, props));
-  } else if (ReactDOM.render) {
-    // Legacy React 17 and below
-    ReactDOM.render(React.createElement(FhirWidget, props), targetElement);
-  } else {
-    throw new Error('No compatible ReactDOM render method found');
-  }
-};
-
 export default FhirWidget;

@@ -467,19 +467,26 @@ const CreateTemplate: React.FC = () => {
 
           {/* Live Preview Panel (Bottom) */}
           <div className="flex-1 flex flex-col min-h-0">
-            <div className="px-4 py-3 text-sm font-medium text-gray-900 border-b border-gray-100 bg-gray-50">
-              Live Preview
-              {/* Panel resize shortcuts indicator */}
-              <span 
-                className="float-right text-xs text-gray-400"
-                title="Keyboard shortcuts: Ctrl+[ to shrink, Ctrl+] to expand, Ctrl+0 to reset"
-              >
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-              </span>
+            <div className="p-4 border-b border-gray-200 bg-white">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">Live Preview</h3>
+                  <p className="text-sm text-gray-600">
+                    Real-time preview of how your template renders with the sample data
+                  </p>
+                </div>
+                {/* Panel resize shortcuts indicator */}
+                <span 
+                  className="text-xs text-gray-400"
+                  title="Keyboard shortcuts: Ctrl+[ to shrink, Ctrl+] to expand, Ctrl+0 to reset"
+                >
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </span>
+              </div>
             </div>
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-y-auto">
               <LivePreview template={template} sampleData={sampleData} />
             </div>
           </div>

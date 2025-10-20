@@ -4,16 +4,6 @@ import type { LivePreviewProps, TemplateField, FhirResource, Template, TwoColumn
 import { evaluateExpression } from '../shared/expressionEvaluator';
 
 const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
-  const getResourceIcon = (resourceType: string): string => {
-    switch (resourceType) {
-      case 'Patient': return '👤';
-      case 'HumanName': return '📝';
-      case 'ContactPoint': return '📞';
-      case 'Address': return '🏠';
-      default: return '📋';
-    }
-  };
-
   const getFieldValue = (fhirPath: string, data: FhirResource | null): any => {
     if (!fhirPath || !data) return '';
     
@@ -234,13 +224,91 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
     return false;
   };
 
-  const getDisplayValue = (field: TemplateField, value: any): string => {
+  const getDisplayValue = (field: TemplateField, value: any): React.ReactNode => {
     // If field should be hidden, return empty (this shouldn't be called)
-    if (shouldHideField(field, value)) return '';
+    if (shouldHideField(field, value)) {
+      return null;
+    }
     
     // If no value and hideIfEmpty is false/undefined, show N/A
-    if (!value && value !== 0 && value !== false) return 'N/A';
+    if (!value && value !== 0 && value !== false) {
+      return 'N/A';
+    }
     
+    // Check if it's already a valid React element
+    if (React.isValidElement(value)) {
+      return value;
+    }
+    
+    // Handle arrays
+    if (Array.isArray(value)) {
+      if (value.length === 0) {
+        return 'N/A';
+      }
+      
+      const validItems = value.filter(item => item !== null && item !== undefined);
+      
+      if (validItems.length === 0) {
+        return 'N/A';
+      }
+      
+      const arrayContent = validItems.map((item, index) => {
+        if (React.isValidElement(item)) {
+          return <span key={index}>{item}</span>;
+        }
+        
+        if (typeof item === 'object' && item !== null) {
+          // Check for React element properties
+          if (item.$$typeof || item.type || item.props) {
+            return <span key={index}>[React Element]</span>;
+          }
+          
+          try {
+            const jsonStr = JSON.stringify(item, null, 2);
+            return <pre key={index} style={{ margin: 0, fontSize: '12px' }}>{jsonStr}</pre>;
+          } catch (error) {
+            console.error('Error stringifying array item:', error);
+            return <span key={index}>[Complex Object]</span>;
+          }
+        }
+        
+        return <span key={index}>{String(item)}</span>;
+      });
+      
+      return <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>{arrayContent}</div>;
+    }
+    
+    // Handle objects by converting to JSON string
+    if (typeof value === 'object' && value !== null) {
+      // Safety check: if it's a React element, return a safe string
+      if (value.$$typeof || value.type || value.props) {
+        return '[React Element]';
+      }
+      
+      // Check for common FHIR display properties
+      if (value.display) {
+        return String(value.display);
+      }
+      
+      if (value.text) {
+        return String(value.text);
+      }
+      
+      if (value.value !== undefined) {
+        return String(value.value);
+      }
+      
+      // Convert to formatted JSON
+      try {
+        const jsonStr = JSON.stringify(value, null, 2);
+        return <pre style={{ margin: 0, fontSize: '12px', whiteSpace: 'pre-wrap' }}>{jsonStr}</pre>;
+      } catch (error) {
+        console.error('Error stringifying object:', error);
+        return '[Complex Object]';
+      }
+    }
+    
+    // Handle primitives
     return String(value);
   };
 
@@ -257,14 +325,14 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
           <div
             key={field.id}
             className={`mb-2 ${
-              labelField.fontSize === 'xl' ? 'text-xl' :
+              labelField.fontSize === 'sm' ? 'text-sm' :
               labelField.fontSize === 'lg' ? 'text-lg' :
-              labelField.fontSize === 'sm' ? 'text-sm' : 'text-base'
+              labelField.fontSize === 'xl' ? 'text-xl' : 'text-base'
             } ${
               labelField.fontWeight === 'bold' ? 'font-bold' : 'font-normal'
-            } text-gray-900 flex items-center`}
+            }`}
+            style={{ color: labelField.color || 'inherit' }}
           >
-            <span className="mr-2">🏷️</span>
             {field.label}
           </div>
         );
@@ -283,7 +351,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
         );
 
       case 'date':
-        const formattedDate = value ? new Date(value).toLocaleDateString() : getDisplayValue(field, value);
+        const formattedDate = value ? new Date(value).toLocaleDateString() : null;
         return (
           <div key={field.id} className="mb-4 bg-white border border-gray-200 rounded-lg p-3">
             <div className="flex items-center space-x-2 mb-2">
@@ -291,14 +359,15 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
               <dt className="text-sm font-medium text-gray-700">{field.label}</dt>
             </div>
             <dd className="bg-gray-50 px-3 py-2 rounded border text-gray-900">
-              {formattedDate}
+              {formattedDate || getDisplayValue(field, value)}
             </dd>
           </div>
         );
 
       case 'select':
         const selectField = field as any;
-        const displayValue = selectField.options?.find((opt: any) => opt.value === value)?.label || value || getDisplayValue(field, value);
+        const optionLabel = selectField.options?.find((opt: any) => opt.value === value)?.label;
+        const displayValue = optionLabel || value;
         return (
           <div key={field.id} className="mb-4 bg-white border border-gray-200 rounded-lg p-3">
             <div className="flex items-center space-x-2 mb-2">
@@ -306,14 +375,15 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
               <dt className="text-sm font-medium text-gray-700">{field.label}</dt>
             </div>
             <dd className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              {displayValue}
+              {displayValue || getDisplayValue(field, value)}
             </dd>
           </div>
         );
 
       case 'radio':
         const radioField = field as any;
-        const radioDisplayValue = radioField.options?.find((opt: any) => opt.value === value)?.label || value || getDisplayValue(field, value);
+        const radioOptionLabel = radioField.options?.find((opt: any) => opt.value === value)?.label;
+        const radioDisplayValue = radioOptionLabel || value;
         return (
           <div key={field.id} className="mb-4 bg-white border border-gray-200 rounded-lg p-3">
             <div className="flex items-center space-x-2 mb-2">
@@ -321,7 +391,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
               <dt className="text-sm font-medium text-gray-700">{field.label}</dt>
             </div>
             <dd className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-              {radioDisplayValue}
+              {radioDisplayValue || getDisplayValue(field, value)}
             </dd>
           </div>
         );
@@ -441,18 +511,18 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
         };
 
         return (
-          <div key={field.id} className="flex items-start py-3 border-b border-gray-100 last:border-b-0">
-            <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-              <span className="text-lg">{getTextIcon()}</span>
+          <div key={field.id} className="flex items-start py-4 border-b border-gray-100 last:border-b-0">
+            <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center">
+              <span className="text-xl">{getTextIcon()}</span>
             </div>
-            <div className="ml-3 flex-1">
+            <div className="ml-4 flex-1">
               {!field.hideLabel && (
-                <dt className="text-sm font-medium text-gray-600">
+                <dt className="text-sm font-medium text-gray-600 mb-1">
                   {field.label}
                   {field.required && <span className="text-red-500 ml-1">*</span>}
                 </dt>
               )}
-              <dd className={`${field.hideLabel ? '' : 'mt-1'} text-base text-gray-900 font-medium`}>
+              <dd className="text-base text-gray-900 font-medium">
                 {formatTextValue()}
               </dd>
             </div>
@@ -486,18 +556,18 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
         };
         
         return (
-          <div key={field.id} className="flex items-start py-3 border-b border-gray-100 last:border-b-0">
-            <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-              <span className="text-lg">📅</span>
+          <div key={field.id} className="flex items-start py-4 border-b border-gray-100 last:border-b-0">
+            <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center">
+              <span className="text-xl">📅</span>
             </div>
-            <div className="ml-3 flex-1">
+            <div className="ml-4 flex-1">
               {!field.hideLabel && (
-                <dt className="text-sm font-medium text-gray-600">
+                <dt className="text-sm font-medium text-gray-600 mb-1">
                   {field.label}
                   {field.required && <span className="text-red-500 ml-1">*</span>}
                 </dt>
               )}
-              <dd className={`${field.hideLabel ? '' : 'mt-1'} text-base text-gray-900 font-medium`}>
+              <dd className="text-base text-gray-900 font-medium">
                 {formatDate(value)}
               </dd>
             </div>
@@ -522,18 +592,18 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
         };
         
         return (
-          <div key={field.id} className="flex items-start py-3 border-b border-gray-100 last:border-b-0">
-            <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-              <span className="text-lg">{getIcon()}</span>
+          <div key={field.id} className="flex items-start py-4 border-b border-gray-100 last:border-b-0">
+            <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center">
+              <span className="text-xl">{getIcon()}</span>
             </div>
-            <div className="ml-3 flex-1">
+            <div className="ml-4 flex-1">
               {!field.hideLabel && (
-                <dt className="text-sm font-medium text-gray-600">
+                <dt className="text-sm font-medium text-gray-600 mb-1">
                   {field.label}
                   {field.required && <span className="text-red-500 ml-1">*</span>}
                 </dt>
               )}
-              <dd className={`${field.hideLabel ? '' : 'mt-1'}`}>
+              <dd>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200 capitalize">
                   {getSelectDisplayValue()}
                 </span>
@@ -560,18 +630,18 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
         };
         
         return (
-          <div key={field.id} className="flex items-start py-3 border-b border-gray-100 last:border-b-0">
-            <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-              <span className="text-lg">{getRadioIcon()}</span>
+          <div key={field.id} className="flex items-start py-4 border-b border-gray-100 last:border-b-0">
+            <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center">
+              <span className="text-xl">{getRadioIcon()}</span>
             </div>
-            <div className="ml-3 flex-1">
+            <div className="ml-4 flex-1">
               {!field.hideLabel && (
-                <dt className="text-sm font-medium text-gray-600">
+                <dt className="text-sm font-medium text-gray-600 mb-1">
                   {field.label}
                   {field.required && <span className="text-red-500 ml-1">*</span>}
                 </dt>
               )}
-              <dd className={`${field.hideLabel ? '' : 'mt-1'}`}>
+              <dd>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 border border-purple-200 capitalize">
                   {getRadioDisplayValue()}
                 </span>
@@ -583,18 +653,18 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
       case 'checkbox':
         const isActive = Boolean(value);
         return (
-          <div key={field.id} className="flex items-start py-3 border-b border-gray-100 last:border-b-0">
-            <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-              <span className="text-lg">{isActive ? '✅' : '❌'}</span>
+          <div key={field.id} className="flex items-start py-4 border-b border-gray-100 last:border-b-0">
+            <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center">
+              <span className="text-xl">{isActive ? '✅' : '❌'}</span>
             </div>
-            <div className="ml-3 flex-1">
+            <div className="ml-4 flex-1">
               {!field.hideLabel && (
-                <dt className="text-sm font-medium text-gray-600">
+                <dt className="text-sm font-medium text-gray-600 mb-1">
                   {field.label}
                   {field.required && <span className="text-red-500 ml-1">*</span>}
                 </dt>
               )}
-              <dd className={`${field.hideLabel ? '' : 'mt-1'}`}>
+              <dd>
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                   isActive 
                     ? 'bg-green-100 text-green-800 border border-green-200' 
@@ -668,15 +738,8 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="p-4 border-b border-gray-200 bg-white">
-        <h3 className="text-lg font-medium text-gray-900">Live Preview</h3>
-        <p className="text-sm text-gray-600">
-          Real-time preview of how your template renders with the sample data
-        </p>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-6 pb-8 bg-white design-canvas-scroll">
+    <div className="h-full">
+      <div className="p-6 pb-8 bg-white max-w-none">
         {!sampleData ? (
           <div className="text-center py-8">
             <svg
@@ -718,23 +781,10 @@ const LivePreview: React.FC<LivePreviewProps> = ({ template, sampleData }) => {
             </p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-            {/* Template Header */}
-            {template.name && (
-              <div className="px-6 py-4 bg-blue-50 border-b border-blue-100 rounded-t-lg">
-                <h2 className="text-2xl font-bold text-blue-900 flex items-center">
-                  <span className="mr-3">{getResourceIcon(template.resourceType)}</span>
-                  {template.name}
-                </h2>
-                {template.description && (
-                  <p className="mt-2 text-blue-700">{template.description}</p>
-                )}
-              </div>
-            )}
-
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm w-full">
             {/* Patient Information Content */}
-            <div className="p-6">
-              <dl className="space-y-4">
+            <div className="p-8">
+              <dl className="space-y-2">
                 {template.fields
                   .sort((a, b) => a.order - b.order)
                   .map((field) => renderField(field))}

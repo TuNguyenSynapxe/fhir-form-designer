@@ -382,260 +382,24 @@
   }
   var lodash_getExports = requireLodash_get();
   const get = /* @__PURE__ */ getDefaultExportFromCjs(lodash_getExports);
-  class ExpressionEvaluator {
-    data;
-    fieldMappings;
-    constructor(data) {
-      this.data = data;
-      this.fieldMappings = this.createFieldMappings();
-    }
-    /**
-     * Create common field name mappings based on resource type
-     */
-    createFieldMappings() {
-      const mappings = {};
-      switch (this.data.resourceType) {
-        case "Patient":
-          mappings.firstName = "name[0].given[0]";
-          mappings.middleName = "name[0].given[1]";
-          mappings.lastName = "name[0].family";
-          mappings.fullName = "name[0]";
-          mappings.prefix = "name[0].prefix[0]";
-          mappings.suffix = "name[0].suffix[0]";
-          mappings.gender = "gender";
-          mappings.birthDate = "birthDate";
-          mappings.email = "telecom.find(t => t.system === 'email').value";
-          mappings.phone = "telecom.find(t => t.system === 'phone').value";
-          mappings.addressLine1 = "address[0].line[0]";
-          mappings.addressLine2 = "address[0].line[1]";
-          mappings.city = "address[0].city";
-          mappings.state = "address[0].state";
-          mappings.postalCode = "address[0].postalCode";
-          mappings.country = "address[0].country";
-          mappings.maritalStatus = "maritalStatus.coding[0].display";
-          break;
-        case "HumanName":
-          mappings.firstName = "given[0]";
-          mappings.middleName = "given[1]";
-          mappings.lastName = "family";
-          mappings.prefix = "prefix[0]";
-          mappings.suffix = "suffix[0]";
-          mappings.text = "text";
-          mappings.use = "use";
-          break;
-        case "ContactPoint":
-          mappings.system = "system";
-          mappings.value = "value";
-          mappings.use = "use";
-          mappings.rank = "rank";
-          break;
-        case "Address":
-          mappings.line1 = "line[0]";
-          mappings.line2 = "line[1]";
-          mappings.city = "city";
-          mappings.state = "state";
-          mappings.postalCode = "postalCode";
-          mappings.country = "country";
-          mappings.district = "district";
-          mappings.text = "text";
-          mappings.use = "use";
-          mappings.type = "type";
-          break;
-      }
-      return mappings;
-    }
-    /**
-     * Get the value for a field name using FHIR path resolution
-     */
-    getFieldValue(fieldName) {
-      const fhirPath = this.fieldMappings[fieldName];
-      if (!fhirPath) {
-        console.warn(`Field "${fieldName}" not available for resource type "${this.data.resourceType}". Available fields:`, Object.keys(this.fieldMappings));
-        return `[${fieldName}?]`;
-      }
-      try {
-        if (fhirPath.includes("telecom.find(") && this.data.resourceType === "Patient") {
-          const patientData = this.data;
-          if (fhirPath.includes("'email'")) {
-            const emailItem = patientData.telecom?.find((item) => item.system === "email");
-            return emailItem?.value || "";
-          }
-          if (fhirPath.includes("'phone'")) {
-            const phoneItem = patientData.telecom?.find((item) => item.system === "phone");
-            return phoneItem?.value || "";
-          }
-        }
-        return get(this.data, fhirPath) || "";
-      } catch (error) {
-        console.error("Error resolving field:", fieldName, error);
-        return "";
-      }
-    }
-    /**
-     * Evaluate an expression and return the result
-     */
-    evaluate(expression) {
-      if (!expression || !expression.trim()) {
-        return "";
-      }
-      console.log("Evaluating expression:", expression);
-      try {
-        let evaluatedExpression = expression;
-        evaluatedExpression = this.replaceFhirPaths(evaluatedExpression);
-        const fieldNames = Object.keys(this.fieldMappings).sort((a, b) => b.length - a.length);
-        for (const fieldName of fieldNames) {
-          const regex = new RegExp(`\\b${fieldName}\\b`, "g");
-          if (regex.test(evaluatedExpression)) {
-            const fieldValue = this.getFieldValue(fieldName);
-            const fieldValueStr = String(fieldValue || "");
-            const escapedValue = fieldValueStr.replace(/"/g, '\\"');
-            evaluatedExpression = evaluatedExpression.replace(regex, `"${escapedValue}"`);
-          }
-        }
-        console.log("After field replacement:", evaluatedExpression);
-        const result = this.safeEvaluate(evaluatedExpression);
-        console.log("Evaluation result:", result);
-        return String(result || "");
-      } catch (error) {
-        console.error("Error evaluating expression:", expression, error);
-        return `[Error: ${error instanceof Error ? error.message : String(error)}]`;
-      }
-    }
-    /**
-     * Replace FHIR paths in expressions with their actual values
-     */
-    replaceFhirPaths(expression) {
-      console.log("Original expression:", expression);
-      console.log("Data:", this.data);
-      let result = expression;
-      const telecomFindRegex = /telecom\.find\([^)]+\)\.value/g;
-      result = result.replace(telecomFindRegex, (match) => {
-        console.log("Processing telecom find:", match);
-        try {
-          const value = this.resolveFhirPath(match);
-          const escapedValue = String(value || "").replace(/"/g, '\\"');
-          console.log("Telecom find result:", match, "->", value);
-          return `"${escapedValue}"`;
-        } catch (error) {
-          console.warn("Error resolving telecom path:", match, error);
-          return '""';
-        }
-      });
-      const allPaths = /* @__PURE__ */ new Set();
-      const pattern1 = /\b[a-zA-Z][a-zA-Z0-9]*\[[0-9]+\]\.[a-zA-Z][a-zA-Z0-9]*\[[0-9]+\]/g;
-      let match1;
-      while ((match1 = pattern1.exec(result)) !== null) {
-        allPaths.add(match1[0]);
-      }
-      const pattern2 = /\b[a-zA-Z][a-zA-Z0-9]*\[[0-9]+\]\.[a-zA-Z][a-zA-Z0-9]*/g;
-      let match2;
-      while ((match2 = pattern2.exec(result)) !== null) {
-        if (!Array.from(allPaths).some((existing) => existing.includes(match2[0]))) {
-          allPaths.add(match2[0]);
-        }
-      }
-      const pattern3 = /\b[a-zA-Z][a-zA-Z0-9]*\[[0-9]+\]/g;
-      let match3;
-      while ((match3 = pattern3.exec(result)) !== null) {
-        if (!Array.from(allPaths).some((existing) => existing.includes(match3[0]))) {
-          allPaths.add(match3[0]);
-        }
-      }
-      const matches = Array.from(allPaths).map((path) => ({ 0: path }));
-      console.log("Found FHIR path matches:", matches.map((m) => m[0]));
-      matches.sort((a, b) => b[0].length - a[0].length);
-      const processed = /* @__PURE__ */ new Set();
-      for (const match of matches) {
-        const fhirPath = match[0];
-        if (processed.has(fhirPath) || result.includes(`"${fhirPath}"`)) {
-          continue;
-        }
-        console.log("Processing FHIR path:", fhirPath);
-        try {
-          const value = this.resolveFhirPath(fhirPath);
-          console.log("FHIR path result:", fhirPath, "->", value, "(type:", typeof value, ")");
-          const escapedValue = String(value || "").replace(/"/g, '\\"');
-          const beforeReplacement = result;
-          result = result.replace(new RegExp(fhirPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), `"${escapedValue}"`);
-          if (result !== beforeReplacement) {
-            console.log(`Replaced "${fhirPath}" with "${escapedValue}"`);
-            console.log("Before:", beforeReplacement);
-            console.log("After:", result);
-          } else {
-            console.log(`No replacements made for "${fhirPath}"`);
-          }
-          processed.add(fhirPath);
-        } catch (error) {
-          console.warn("Error resolving FHIR path:", fhirPath, error);
-          const escapedPath = fhirPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-          result = result.replace(new RegExp(`\\b${escapedPath}\\b`, "g"), '""');
-          processed.add(fhirPath);
-        }
-      }
-      console.log("Final result after FHIR path replacement:", result);
-      return result;
-    }
-    /**
-     * Resolve a FHIR path against the data
-     */
-    resolveFhirPath(fhirPath) {
-      console.log("Resolving FHIR path:", fhirPath, "against data:", this.data);
-      try {
-        if (fhirPath.includes("telecom.find(") && this.data.resourceType === "Patient") {
-          const patientData = this.data;
-          if (fhirPath.includes("'email'") || fhirPath.includes('"email"')) {
-            const emailItem = patientData.telecom?.find((item) => item.system === "email");
-            const result2 = emailItem?.value || "";
-            console.log("Telecom email result:", result2);
-            return result2;
-          }
-          if (fhirPath.includes("'phone'") || fhirPath.includes('"phone"')) {
-            const phoneItem = patientData.telecom?.find((item) => item.system === "phone");
-            const result2 = phoneItem?.value || "";
-            console.log("Telecom phone result:", result2);
-            return result2;
-          }
-        }
-        const result = get(this.data, fhirPath);
-        console.log("Lodash.get result for", fhirPath, ":", result, "(type:", typeof result, ")");
-        return result || "";
-      } catch (error) {
-        console.error("Error resolving FHIR path:", fhirPath, error);
-        return "";
-      }
-    }
-    /**
-     * Safely evaluate expressions - only allows string concatenation and basic operations
-     */
-    safeEvaluate(expression) {
-      try {
-        console.log("Safe evaluating:", expression);
-        const safeExpression = expression.replace(/[<>{}$`\\]/g, "").trim();
-        console.log("Sanitized expression:", safeExpression);
-        const func = new Function("return " + safeExpression);
-        const result = func();
-        console.log("Function result:", result);
-        return String(result);
-      } catch (error) {
-        console.error("Safe eval error:", error);
-        return expression;
-      }
-    }
-    /**
-     * Get available field names for this resource type
-     */
-    getAvailableFields() {
-      return Object.keys(this.fieldMappings).sort();
-    }
-  }
-  function evaluateExpression(expression, data) {
-    if (!expression || !data) {
-      return "";
-    }
-    const evaluator = new ExpressionEvaluator(data);
-    return evaluator.evaluate(expression);
+  function evaluateExpression(_expression, _data) {
+    return "";
   }
   const LivePreview = ({ template, sampleData }) => {
+    const getResourceIcon = (resourceType) => {
+      switch (resourceType) {
+        case "Patient":
+          return "👤";
+        case "HumanName":
+          return "📝";
+        case "ContactPoint":
+          return "📞";
+        case "Address":
+          return "🏠";
+        default:
+          return "📋";
+      }
+    };
     const getFieldValue = (fhirPath, data) => {
       if (!fhirPath || !data) return "";
       try {
@@ -657,7 +421,20 @@
           }
           return "";
         }
-        return get(data, fhirPath) || "";
+        const result = get(data, fhirPath);
+        if (result === null || result === void 0) {
+          return "";
+        }
+        if (typeof result === "object") {
+          if (result.$$typeof || result.type || result.props) {
+            return "[React Element]";
+          }
+          if (Array.isArray(result)) {
+            return result.length > 0 ? JSON.stringify(result) : "";
+          }
+          return JSON.stringify(result);
+        }
+        return result;
       } catch (error) {
         console.error("Error resolving FHIR path:", fhirPath, error);
         return "";
@@ -791,63 +568,13 @@
       return false;
     };
     const getDisplayValue = (field, value) => {
-      if (shouldHideField(field, value)) {
-        return null;
-      }
-      if (!value && value !== 0 && value !== false) {
-        return "N/A";
-      }
-      if (React.isValidElement(value)) {
-        return value;
-      }
-      if (Array.isArray(value)) {
-        if (value.length === 0) {
-          return "N/A";
-        }
-        const validItems = value.filter((item) => item !== null && item !== void 0);
-        if (validItems.length === 0) {
-          return "N/A";
-        }
-        const arrayContent = validItems.map((item, index) => {
-          if (React.isValidElement(item)) {
-            return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: item }, index);
-          }
-          if (typeof item === "object" && item !== null) {
-            if (item.$$typeof || item.type || item.props) {
-              return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "[React Element]" }, index);
-            }
-            try {
-              const jsonStr = JSON.stringify(item, null, 2);
-              return /* @__PURE__ */ jsxRuntimeExports.jsx("pre", { style: { margin: 0, fontSize: "12px" }, children: jsonStr }, index);
-            } catch (error) {
-              console.error("Error stringifying array item:", error);
-              return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "[Complex Object]" }, index);
-            }
-          }
-          return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: String(item) }, index);
-        });
-        return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: "4px" }, children: arrayContent });
-      }
+      if (shouldHideField(field, value)) return "";
+      if (!value && value !== 0 && value !== false) return "N/A";
       if (typeof value === "object" && value !== null) {
         if (value.$$typeof || value.type || value.props) {
           return "[React Element]";
         }
-        if (value.display) {
-          return String(value.display);
-        }
-        if (value.text) {
-          return String(value.text);
-        }
-        if (value.value !== void 0) {
-          return String(value.value);
-        }
-        try {
-          const jsonStr = JSON.stringify(value, null, 2);
-          return /* @__PURE__ */ jsxRuntimeExports.jsx("pre", { style: { margin: 0, fontSize: "12px", whiteSpace: "pre-wrap" }, children: jsonStr });
-        } catch (error) {
-          console.error("Error stringifying object:", error);
-          return "[Complex Object]";
-        }
+        return JSON.stringify(value);
       }
       return String(value);
     };
@@ -857,12 +584,14 @@
       switch (field.type) {
         case "label":
           const labelField = field;
-          return /* @__PURE__ */ jsxRuntimeExports.jsx(
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs(
             "div",
             {
-              className: `mb-2 ${labelField.fontSize === "sm" ? "text-sm" : labelField.fontSize === "lg" ? "text-lg" : labelField.fontSize === "xl" ? "text-xl" : "text-base"} ${labelField.fontWeight === "bold" ? "font-bold" : "font-normal"}`,
-              style: { color: labelField.color || "inherit" },
-              children: field.label
+              className: `mb-2 ${labelField.fontSize === "xl" ? "text-xl" : labelField.fontSize === "lg" ? "text-lg" : labelField.fontSize === "sm" ? "text-sm" : "text-base"} ${labelField.fontWeight === "bold" ? "font-bold" : "font-normal"} text-gray-900 flex items-center`,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "mr-2", children: "🏷️" }),
+                field.label
+              ]
             },
             field.id
           );
@@ -875,35 +604,33 @@
             /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: "bg-gray-50 px-3 py-2 rounded border text-gray-900", children: getDisplayValue(field, value) })
           ] }, field.id);
         case "date":
-          const formattedDate = value ? new Date(value).toLocaleDateString() : null;
+          const formattedDate = value ? new Date(value).toLocaleDateString() : getDisplayValue(field, value);
           return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 bg-white border border-gray-200 rounded-lg p-3", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center space-x-2 mb-2", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "📅" }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("dt", { className: "text-sm font-medium text-gray-700", children: field.label })
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: "bg-gray-50 px-3 py-2 rounded border text-gray-900", children: formattedDate || getDisplayValue(field, value) })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: "bg-gray-50 px-3 py-2 rounded border text-gray-900", children: formattedDate })
           ] }, field.id);
         case "select":
           const selectField = field;
-          const optionLabel = selectField.options?.find((opt) => opt.value === value)?.label;
-          const displayValue = optionLabel || value;
+          const displayValue = selectField.options?.find((opt) => opt.value === value)?.label || value || getDisplayValue(field, value);
           return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 bg-white border border-gray-200 rounded-lg p-3", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center space-x-2 mb-2", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "📋" }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("dt", { className: "text-sm font-medium text-gray-700", children: field.label })
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800", children: displayValue || getDisplayValue(field, value) })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800", children: displayValue })
           ] }, field.id);
         case "radio":
           const radioField = field;
-          const radioOptionLabel = radioField.options?.find((opt) => opt.value === value)?.label;
-          const radioDisplayValue = radioOptionLabel || value;
+          const radioDisplayValue = radioField.options?.find((opt) => opt.value === value)?.label || value || getDisplayValue(field, value);
           return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 bg-white border border-gray-200 rounded-lg p-3", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center space-x-2 mb-2", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "🔘" }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("dt", { className: "text-sm font-medium text-gray-700", children: field.label })
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800", children: radioDisplayValue || getDisplayValue(field, value) })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800", children: radioDisplayValue })
           ] }, field.id);
         case "checkbox":
           const isChecked = Boolean(value);
@@ -934,7 +661,7 @@
       }
     };
     const renderField = (field) => {
-      const value = field.expression && sampleData ? evaluateExpression(field.expression, sampleData) : field.fhirPath ? getFieldValue(field.fhirPath, sampleData) : "";
+      const value = field.expression && sampleData ? evaluateExpression(field.expression) : field.fhirPath ? getFieldValue(field.fhirPath, sampleData) : "";
       if (shouldHideField(field, value)) return null;
       switch (field.type) {
         case "label":
@@ -963,23 +690,29 @@
           };
           const formatTextValue = () => {
             if (!value) return getDisplayValue(field, value);
-            if (typeof value === "object") return JSON.stringify(value);
-            if (field.label.toLowerCase().includes("email") && value.includes("@")) {
-              return value;
+            if (typeof value === "object" && value !== null) {
+              if (value.$$typeof || value.type || value.props) {
+                return "[React Element]";
+              }
+              return JSON.stringify(value);
             }
-            if (field.label.toLowerCase().includes("phone") && value.match(/^\+?[\d\s\-\(\)]+$/)) {
-              return value;
+            const stringValue = String(value);
+            if (field.label.toLowerCase().includes("email") && stringValue.includes("@")) {
+              return stringValue;
             }
-            return value;
+            if (field.label.toLowerCase().includes("phone") && stringValue.match(/^\+?[\d\s\-\(\)]+$/)) {
+              return stringValue;
+            }
+            return stringValue;
           };
-          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-4 border-b border-gray-100 last:border-b-0", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-12 h-12 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xl", children: getTextIcon() }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-4 flex-1", children: [
-              !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600 mb-1", children: [
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-3 border-b border-gray-100 last:border-b-0", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-8 h-8 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-lg", children: getTextIcon() }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-3 flex-1", children: [
+              !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600", children: [
                 field.label,
                 field.required && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-red-500 ml-1", children: "*" })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: "text-base text-gray-900 font-medium", children: formatTextValue() })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: `${field.hideLabel ? "" : "mt-1"} text-base text-gray-900 font-medium`, children: formatTextValue() })
             ] })
           ] }, field.id);
         case "date":
@@ -1004,14 +737,14 @@
               return dateValue;
             }
           };
-          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-4 border-b border-gray-100 last:border-b-0", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-12 h-12 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xl", children: "📅" }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-4 flex-1", children: [
-              !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600 mb-1", children: [
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-3 border-b border-gray-100 last:border-b-0", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-8 h-8 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-lg", children: "📅" }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-3 flex-1", children: [
+              !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600", children: [
                 field.label,
                 field.required && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-red-500 ml-1", children: "*" })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: "text-base text-gray-900 font-medium", children: formatDate(value) })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: `${field.hideLabel ? "" : "mt-1"} text-base text-gray-900 font-medium`, children: formatDate(value) })
             ] })
           ] }, field.id);
         case "select":
@@ -1029,14 +762,14 @@
             if (field.label.toLowerCase().includes("type")) return "🏷️";
             return "📋";
           };
-          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-4 border-b border-gray-100 last:border-b-0", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-12 h-12 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xl", children: getIcon() }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-4 flex-1", children: [
-              !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600 mb-1", children: [
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-3 border-b border-gray-100 last:border-b-0", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-8 h-8 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-lg", children: getIcon() }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-3 flex-1", children: [
+              !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600", children: [
                 field.label,
                 field.required && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-red-500 ml-1", children: "*" })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200 capitalize", children: getSelectDisplayValue() }) })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: `${field.hideLabel ? "" : "mt-1"}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200 capitalize", children: getSelectDisplayValue() }) })
             ] })
           ] }, field.id);
         case "radio":
@@ -1054,26 +787,26 @@
             if (field.label.toLowerCase().includes("rating")) return "⭐";
             return "🔘";
           };
-          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-4 border-b border-gray-100 last:border-b-0", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-12 h-12 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xl", children: getRadioIcon() }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-4 flex-1", children: [
-              !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600 mb-1", children: [
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-3 border-b border-gray-100 last:border-b-0", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-8 h-8 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-lg", children: getRadioIcon() }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-3 flex-1", children: [
+              !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600", children: [
                 field.label,
                 field.required && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-red-500 ml-1", children: "*" })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 border border-purple-200 capitalize", children: getRadioDisplayValue() }) })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: `${field.hideLabel ? "" : "mt-1"}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 border border-purple-200 capitalize", children: getRadioDisplayValue() }) })
             ] })
           ] }, field.id);
         case "checkbox":
           const isActive = Boolean(value);
-          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-4 border-b border-gray-100 last:border-b-0", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-12 h-12 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xl", children: isActive ? "✅" : "❌" }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-4 flex-1", children: [
-              !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600 mb-1", children: [
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-3 border-b border-gray-100 last:border-b-0", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-8 h-8 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-lg", children: isActive ? "✅" : "❌" }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-3 flex-1", children: [
+              !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600", children: [
                 field.label,
                 field.required && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-red-500 ml-1", children: "*" })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${isActive ? "bg-green-100 text-green-800 border border-green-200" : "bg-gray-100 text-gray-600 border border-gray-200"}`, children: isActive ? "Active" : "Inactive" }) })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: `${field.hideLabel ? "" : "mt-1"}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${isActive ? "bg-green-100 text-green-800 border border-green-200" : "bg-gray-100 text-gray-600 border border-gray-200"}`, children: isActive ? "Active" : "Inactive" }) })
             ] })
           ] }, field.id);
         case "group":
@@ -1110,8 +843,12 @@
           ] }) }, field.id);
       }
     };
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "h-full", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-6 pb-8 bg-white max-w-none", children: !sampleData ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center py-8", children: [
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "h-full flex flex-col", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4 border-b border-gray-200 bg-white", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-lg font-medium text-gray-900", children: "Live Preview" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-gray-600", children: "Real-time preview of how your template renders with the sample data" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-1 overflow-y-auto p-6 pb-8 bg-white design-canvas-scroll", children: !sampleData ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center py-8", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "svg",
           {
@@ -1153,7 +890,16 @@
         ),
         /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mt-2 text-sm font-medium text-gray-900", children: "No fields" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-sm text-gray-500", children: "Add fields to your template to see the preview." })
-      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "bg-white rounded-lg border border-gray-200 shadow-sm w-full", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-8", children: /* @__PURE__ */ jsxRuntimeExports.jsx("dl", { className: "space-y-2", children: template.fields.sort((a, b) => a.order - b.order).map((field) => renderField(field)) }) }) }) }),
+      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white rounded-lg border border-gray-200 shadow-sm", children: [
+        template.name && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-6 py-4 bg-blue-50 border-b border-blue-100 rounded-t-lg", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("h2", { className: "text-2xl font-bold text-blue-900 flex items-center", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "mr-3", children: getResourceIcon(template.resourceType) }),
+            template.name
+          ] }),
+          template.description && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-2 text-blue-700", children: template.description })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-6", children: /* @__PURE__ */ jsxRuntimeExports.jsx("dl", { className: "space-y-4", children: template.fields.sort((a, b) => a.order - b.order).map((field) => renderField(field)).filter(Boolean) }) })
+      ] }) }),
       sampleData && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-4 border-t border-gray-200 bg-gray-50", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-sm text-gray-600", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-xs text-gray-600 space-x-3", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center text-green-600", children: [

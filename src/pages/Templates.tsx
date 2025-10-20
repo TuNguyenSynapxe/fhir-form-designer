@@ -121,9 +121,26 @@ const Templates: React.FC = () => {
 
   const deleteTemplate = (id: string) => {
     if (window.confirm('Are you sure you want to delete this template?')) {
-      const updatedTemplates = templates.filter(t => t.id !== id);
-      setTemplates(updatedTemplates);
-      localStorage.setItem('fhir-templates', JSON.stringify({ templates: updatedTemplates }));
+      // Load ALL templates from localStorage
+      const stored = localStorage.getItem('fhir-templates');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          const allTemplates = parsed.templates || [];
+          
+          // Remove only the specific template from ALL templates
+          const updatedAllTemplates = allTemplates.filter((t: Template) => t.id !== id);
+          
+          // Save ALL templates back to localStorage
+          localStorage.setItem('fhir-templates', JSON.stringify({ templates: updatedAllTemplates }));
+          
+          // Update the current workspace templates display
+          const updatedWorkspaceTemplates = templates.filter(t => t.id !== id);
+          setTemplates(updatedWorkspaceTemplates);
+        } catch (error) {
+          console.error('Failed to delete template:', error);
+        }
+      }
     }
   };
 
@@ -138,9 +155,26 @@ const Templates: React.FC = () => {
       updatedAt: new Date().toISOString()
     };
     
-    const updatedTemplates = [...templates, newTemplate];
-    setTemplates(updatedTemplates);
-    localStorage.setItem('fhir-templates', JSON.stringify({ templates: updatedTemplates }));
+    // Load ALL templates from localStorage
+    const stored = localStorage.getItem('fhir-templates');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        const allTemplates = parsed.templates || [];
+        
+        // Add the new template to ALL templates
+        const updatedAllTemplates = [...allTemplates, newTemplate];
+        
+        // Save ALL templates back to localStorage
+        localStorage.setItem('fhir-templates', JSON.stringify({ templates: updatedAllTemplates }));
+        
+        // Update the current workspace templates display
+        const updatedWorkspaceTemplates = [...templates, newTemplate];
+        setTemplates(updatedWorkspaceTemplates);
+      } catch (error) {
+        console.error('Failed to duplicate template:', error);
+      }
+    }
   };
 
   const exportTemplate = (template: Template) => {
@@ -307,6 +341,12 @@ const Templates: React.FC = () => {
             </div>
           </div>
           <div className="flex gap-3">
+            <Link
+              to="/widget-test"
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+            >
+              🧪 Widget Test
+            </Link>
             <button
               onClick={importTemplate}
               className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"

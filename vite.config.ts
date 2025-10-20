@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 
 // https://vite.dev/config/
-export default defineConfig(({ command, mode }) => {
+export default defineConfig(({ mode }) => {
   // Widget build configuration
   if (mode === 'widget') {
     return {
@@ -17,6 +17,7 @@ export default defineConfig(({ command, mode }) => {
         rollupOptions: {
           external: ['react', 'react-dom'],
           output: {
+            exports: 'auto',
             globals: {
               react: 'React',
               'react-dom': 'ReactDOM'
@@ -26,7 +27,8 @@ export default defineConfig(({ command, mode }) => {
         },
         outDir: 'dist-widget',
         emptyOutDir: true,
-        cssCodeSplit: false
+        cssCodeSplit: false,
+        minify: false
       },
       define: {
         'process.env.NODE_ENV': '"production"'

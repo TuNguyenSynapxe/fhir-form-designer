@@ -2,7 +2,6 @@ import React from 'react';
 import { useTheme } from './ThemeProvider';
 import type { Template, FhirResource, TemplateField, TwoColumnField } from '../shared/types';
 import get from 'lodash.get';
-import { evaluateExpression } from '../shared/expressionEvaluator';
 
 interface ThemedPreviewProps {
   template: Template;
@@ -186,18 +185,22 @@ const ThemedPreview: React.FC<ThemedPreviewProps> = ({ template, sampleData }) =
 
   return (
     <div 
-      className="themed-component min-h-full p-6"
+      className="themed-component min-h-screen p-6"
       data-theme={currentTheme}
       style={{
         backgroundColor: theme.colors.background,
         color: theme.colors.text.primary,
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
       }}
     >
       <div 
-        className="max-w-2xl mx-auto p-6 rounded-lg shadow-lg themed-surface"
+        className="w-full max-w-4xl mx-auto p-6 rounded-lg shadow-lg themed-surface"
         style={{
           backgroundColor: theme.colors.surface,
           borderColor: theme.colors.border,
+          minHeight: '500px',
         }}
       >
         <div className="mb-6">

@@ -18,6 +18,16 @@ const PreviewContent: React.FC = () => {
   const [searchParams] = useSearchParams();
   const templateId = searchParams.get('template');
 
+  const getResourceIcon = (resourceType: string): string => {
+    switch (resourceType) {
+      case 'Patient': return '👤';
+      case 'HumanName': return '📝';
+      case 'ContactPoint': return '📞';
+      case 'Address': return '🏠';
+      default: return '📋';
+    }
+  };
+
   // State for template management
   const [template, setTemplate] = useState<Template | null>(null);
   const [templateError, setTemplateError] = useState<string>('');
@@ -158,59 +168,7 @@ const PreviewContent: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Template Preview */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">Template Preview</h2>
-                
-                {/* Template Selector */}
-                {templatesOfSameType.length > 1 && (
-                  <div className="flex items-center space-x-2">
-                    <label className="text-sm text-gray-600">Switch template:</label>
-                    <select
-                      value={template.id}
-                      onChange={(e) => handleTemplateSwitch(e.target.value)}
-                      className="text-sm border border-gray-300 rounded px-2 py-1"
-                    >
-                      {templatesOfSameType.map((t) => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-
-              {!template.fields || template.fields.length === 0 ? (
-                <div className="text-center py-12">
-                  <svg
-                    className="mx-auto h-12 w-12 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No fields</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    This template doesn't have any fields yet.
-                  </p>
-                </div>
-              ) : (
-                <div className="themed-live-preview-wrapper">
-                  <LivePreview template={template} sampleData={sampleData!} />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right Column - JSON Data Input */}
+          {/* Left Column - FHIR Data */}
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex justify-between items-center mb-4">
@@ -248,6 +206,79 @@ const PreviewContent: React.FC = () => {
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Right Column - Template Preview */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">Template Preview</h2>
+                
+                {/* Template Selector */}
+                {templatesOfSameType.length > 1 && (
+                  <div className="flex items-center space-x-2">
+                    <label className="text-sm text-gray-600">Switch template:</label>
+                    <select
+                      value={template.id}
+                      onChange={(e) => handleTemplateSwitch(e.target.value)}
+                      className="text-sm border border-gray-300 rounded px-2 py-1"
+                    >
+                      {templatesOfSameType.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Template Header Information */}
+              {template.name && (
+                <div className="mb-6 px-6 py-4 bg-blue-50 border border-blue-100 rounded-lg">
+                  <h3 className="text-xl font-bold text-blue-900 flex items-center">
+                    <span className="mr-3">{getResourceIcon(template.resourceType)}</span>
+                    {template.name}
+                  </h3>
+                  {template.description && (
+                    <p className="mt-2 text-blue-700">{template.description}</p>
+                  )}
+                </div>
+              )}
+
+              {!template.fields || template.fields.length === 0 ? (
+                <div className="text-center py-12">
+                  <svg
+                    className="mx-auto h-12 w-12 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No fields</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    This template doesn't have any fields yet.
+                  </p>
+                </div>
+              ) : (
+                <div className="themed-live-preview-wrapper flex flex-col h-full">
+                  <div className="p-4 border-b border-gray-200 bg-white">
+                    <h3 className="text-lg font-medium text-gray-900">Live Preview</h3>
+                    <p className="text-sm text-gray-600">
+                      Real-time preview of how your template renders with the sample data
+                    </p>
+                  </div>
+                  <div className="flex-1 overflow-y-auto">
+                    <LivePreview template={template} sampleData={sampleData!} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

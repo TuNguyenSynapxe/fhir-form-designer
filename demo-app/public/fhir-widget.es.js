@@ -633,6 +633,20 @@ function evaluateExpression(expression, data) {
   return evaluator.evaluate(expression);
 }
 const LivePreview = ({ template, sampleData }) => {
+  const getResourceIcon = (resourceType) => {
+    switch (resourceType) {
+      case "Patient":
+        return "👤";
+      case "HumanName":
+        return "📝";
+      case "ContactPoint":
+        return "📞";
+      case "Address":
+        return "🏠";
+      default:
+        return "📋";
+    }
+  };
   const getFieldValue = (fhirPath, data) => {
     if (!fhirPath || !data) return "";
     try {
@@ -854,12 +868,14 @@ const LivePreview = ({ template, sampleData }) => {
     switch (field.type) {
       case "label":
         const labelField = field;
-        return /* @__PURE__ */ jsxRuntimeExports.jsx(
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "div",
           {
-            className: `mb-2 ${labelField.fontSize === "sm" ? "text-sm" : labelField.fontSize === "lg" ? "text-lg" : labelField.fontSize === "xl" ? "text-xl" : "text-base"} ${labelField.fontWeight === "bold" ? "font-bold" : "font-normal"}`,
-            style: { color: labelField.color || "inherit" },
-            children: field.label
+            className: `mb-2 ${labelField.fontSize === "xl" ? "text-xl" : labelField.fontSize === "lg" ? "text-lg" : labelField.fontSize === "sm" ? "text-sm" : "text-base"} ${labelField.fontWeight === "bold" ? "font-bold" : "font-normal"} text-gray-900 flex items-center`,
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "mr-2", children: "🏷️" }),
+              field.label
+            ]
           },
           field.id
         );
@@ -969,14 +985,14 @@ const LivePreview = ({ template, sampleData }) => {
           }
           return value;
         };
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-4 border-b border-gray-100 last:border-b-0", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-12 h-12 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xl", children: getTextIcon() }) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-4 flex-1", children: [
-            !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600 mb-1", children: [
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-3 border-b border-gray-100 last:border-b-0", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-8 h-8 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-lg", children: getTextIcon() }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-3 flex-1", children: [
+            !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600", children: [
               field.label,
               field.required && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-red-500 ml-1", children: "*" })
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: "text-base text-gray-900 font-medium", children: formatTextValue() })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: `${field.hideLabel ? "" : "mt-1"} text-base text-gray-900 font-medium`, children: formatTextValue() })
           ] })
         ] }, field.id);
       case "date":
@@ -1001,14 +1017,14 @@ const LivePreview = ({ template, sampleData }) => {
             return dateValue;
           }
         };
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-4 border-b border-gray-100 last:border-b-0", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-12 h-12 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xl", children: "📅" }) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-4 flex-1", children: [
-            !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600 mb-1", children: [
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-3 border-b border-gray-100 last:border-b-0", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-8 h-8 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-lg", children: "📅" }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-3 flex-1", children: [
+            !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600", children: [
               field.label,
               field.required && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-red-500 ml-1", children: "*" })
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: "text-base text-gray-900 font-medium", children: formatDate(value) })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: `${field.hideLabel ? "" : "mt-1"} text-base text-gray-900 font-medium`, children: formatDate(value) })
           ] })
         ] }, field.id);
       case "select":
@@ -1026,14 +1042,14 @@ const LivePreview = ({ template, sampleData }) => {
           if (field.label.toLowerCase().includes("type")) return "🏷️";
           return "📋";
         };
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-4 border-b border-gray-100 last:border-b-0", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-12 h-12 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xl", children: getIcon() }) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-4 flex-1", children: [
-            !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600 mb-1", children: [
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-3 border-b border-gray-100 last:border-b-0", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-8 h-8 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-lg", children: getIcon() }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-3 flex-1", children: [
+            !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600", children: [
               field.label,
               field.required && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-red-500 ml-1", children: "*" })
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200 capitalize", children: getSelectDisplayValue() }) })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: `${field.hideLabel ? "" : "mt-1"}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200 capitalize", children: getSelectDisplayValue() }) })
           ] })
         ] }, field.id);
       case "radio":
@@ -1051,26 +1067,26 @@ const LivePreview = ({ template, sampleData }) => {
           if (field.label.toLowerCase().includes("rating")) return "⭐";
           return "🔘";
         };
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-4 border-b border-gray-100 last:border-b-0", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-12 h-12 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xl", children: getRadioIcon() }) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-4 flex-1", children: [
-            !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600 mb-1", children: [
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-3 border-b border-gray-100 last:border-b-0", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-8 h-8 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-lg", children: getRadioIcon() }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-3 flex-1", children: [
+            !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600", children: [
               field.label,
               field.required && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-red-500 ml-1", children: "*" })
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 border border-purple-200 capitalize", children: getRadioDisplayValue() }) })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: `${field.hideLabel ? "" : "mt-1"}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 border border-purple-200 capitalize", children: getRadioDisplayValue() }) })
           ] })
         ] }, field.id);
       case "checkbox":
         const isActive = Boolean(value);
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-4 border-b border-gray-100 last:border-b-0", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-12 h-12 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xl", children: isActive ? "✅" : "❌" }) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-4 flex-1", children: [
-            !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600 mb-1", children: [
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start py-3 border-b border-gray-100 last:border-b-0", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-shrink-0 w-8 h-8 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-lg", children: isActive ? "✅" : "❌" }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-3 flex-1", children: [
+            !field.hideLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("dt", { className: "text-sm font-medium text-gray-600", children: [
               field.label,
               field.required && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-red-500 ml-1", children: "*" })
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${isActive ? "bg-green-100 text-green-800 border border-green-200" : "bg-gray-100 text-gray-600 border border-gray-200"}`, children: isActive ? "Active" : "Inactive" }) })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: `${field.hideLabel ? "" : "mt-1"}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${isActive ? "bg-green-100 text-green-800 border border-green-200" : "bg-gray-100 text-gray-600 border border-gray-200"}`, children: isActive ? "Active" : "Inactive" }) })
           ] })
         ] }, field.id);
       case "group":
@@ -1107,8 +1123,12 @@ const LivePreview = ({ template, sampleData }) => {
         ] }) }, field.id);
     }
   };
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "h-full", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-6 pb-8 bg-white max-w-none", children: !sampleData ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center py-8", children: [
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "h-full flex flex-col", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4 border-b border-gray-200 bg-white", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-lg font-medium text-gray-900", children: "Live Preview" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-gray-600", children: "Real-time preview of how your template renders with the sample data" })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-1 overflow-y-auto p-6 pb-8 bg-white design-canvas-scroll", children: !sampleData ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center py-8", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         "svg",
         {
@@ -1150,7 +1170,16 @@ const LivePreview = ({ template, sampleData }) => {
       ),
       /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mt-2 text-sm font-medium text-gray-900", children: "No fields" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-sm text-gray-500", children: "Add fields to your template to see the preview." })
-    ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "bg-white rounded-lg border border-gray-200 shadow-sm w-full", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-8", children: /* @__PURE__ */ jsxRuntimeExports.jsx("dl", { className: "space-y-2", children: template.fields.sort((a, b) => a.order - b.order).map((field) => renderField(field)) }) }) }) }),
+    ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white rounded-lg border border-gray-200 shadow-sm", children: [
+      template.name && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-6 py-4 bg-blue-50 border-b border-blue-100 rounded-t-lg", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("h2", { className: "text-2xl font-bold text-blue-900 flex items-center", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "mr-3", children: getResourceIcon(template.resourceType) }),
+          template.name
+        ] }),
+        template.description && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-2 text-blue-700", children: template.description })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-6", children: /* @__PURE__ */ jsxRuntimeExports.jsx("dl", { className: "space-y-4", children: template.fields.sort((a, b) => a.order - b.order).map((field) => renderField(field)) }) })
+    ] }) }),
     sampleData && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-4 border-t border-gray-200 bg-gray-50", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-sm text-gray-600", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-xs text-gray-600 space-x-3", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center text-green-600", children: [
