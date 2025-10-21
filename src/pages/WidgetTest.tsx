@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import FhirWidget from '../widget/FhirWidget';
 import { getSampleDataByResourceType } from '../shared/sampleData';
 import type { Template } from '../shared/types';
@@ -56,6 +56,7 @@ class ErrorBoundary extends React.Component<
 
 const WidgetTest: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // Sample workspace data
   const patientWorkspace = {
@@ -78,7 +79,20 @@ const WidgetTest: React.FC = () => {
     }]
   };
 
-  const [workspace, setWorkspace] = useState(() => btoa(JSON.stringify(patientWorkspace)));
+  const [workspace, setWorkspace] = useState(() => {
+    // Check if workspace data is provided via URL parameter
+    const urlWorkspace = searchParams.get('workspace');
+    if (urlWorkspace) {
+      try {
+        // URL parameter should already be base64 encoded
+        return decodeURIComponent(urlWorkspace);
+      } catch (error) {
+        console.error('Failed to decode workspace from URL:', error);
+      }
+    }
+    // Fallback to default sample workspace
+    return btoa(JSON.stringify(patientWorkspace));
+  });
   const [workspaceMode, setWorkspaceMode] = useState<'base64' | 'json'>('base64');
   const [templateName, setTemplateName] = useState("Patient Basic Info");
   const [jsonData, setJsonData] = useState('');

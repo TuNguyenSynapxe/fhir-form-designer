@@ -362,12 +362,7 @@ const Templates: React.FC = () => {
         <div className="text-sm text-gray-600">
           Template Testing & Management
         </div>
-        <Link
-          to="/widget-test"
-          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 text-sm"
-        >
-          🧪 Widget Test
-        </Link>
+        {/* Widget Test button removed */}
       </div>
 
       {/* Resource Type Summary */}

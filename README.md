@@ -112,6 +112,95 @@ firstName + " " + lastName                  // Using field aliases
    - Use "Export" to download as JSON file
    - Use "Import" to load templates from JSON files
 
+## 🧭 Navigation Structure
+
+The application uses a hierarchical navigation structure organized around Workspaces and functional areas:
+
+### URL Patterns
+
+#### Data Explorer (Read-Only)
+- `/` - FHIR Data Explorer dashboard showing all configured list viewers
+- `/explorer/:listViewerId` - Individual list viewer for data consumption (read-only mode)
+
+#### Configuration (Editing)
+- `/config` - Configuration landing page with Templates and List Viewers overview
+- `/config/templates` - Template management interface
+- `/config/templates/:templateId` - Individual template editor
+- `/config/list-viewers` - List viewer configuration interface
+- `/config/list-viewers/:listViewerId` - Individual list viewer editor
+
+#### Legacy Support
+- `/templates` - Redirects to `/config/templates` (backward compatibility)
+- `/list-viewer` - Redirects to `/config/list-viewers` (backward compatibility)
+
+### Navigation Components
+
+#### WorkspaceManager Sidebar
+The left sidebar provides expandable workspace navigation:
+
+```
+📋 [Workspace 1] ▼ (expandable)
+├── 📊 Data Explorer        → /?workspace=workspace-1
+├── ⚙️ Configuration        → /config?workspace=workspace-1
+├── 📋 Templates            → /config/templates?workspace=workspace-1  
+└── 📊 List Viewers         → /config/list-viewers?workspace=workspace-1
+
+📋 [Workspace 2] ▶ (collapsed)
+
+📋 [Workspace 3] ▼ (expandable)
+├── 📊 Data Explorer        → /?workspace=workspace-3
+├── ⚙️ Configuration        → /config?workspace=workspace-3
+├── 📋 Templates            → /config/templates?workspace=workspace-3  
+└── 📊 List Viewers         → /config/list-viewers?workspace=workspace-3
+```
+
+**Features:**
+- Individual workspace expansion/collapse with toggle arrows
+- Per-workspace navigation menu (Data Explorer, Configuration, Templates, List Viewers)
+- Current workspace is automatically expanded
+- Workspace switching and management
+- Workspace creation and editing tools
+- Export functionality for widget integration
+
+#### TopNavigation
+The top navigation provides utility tools:
+- 🧪 Widget Test - Link to `/widget-test`
+- Quick Actions (extensible)
+- Help & Documentation
+
+### Component Architecture
+
+#### Page Components
+- **FHIRDataExplorer** - Main dashboard for data exploration
+- **ExplorerListView** - Read-only individual list viewer
+- **ConfigurationIndex** - Configuration landing page
+- **TemplateEditor** - Individual template editing interface
+
+#### Shared Components
+- **WorkspaceManager** - Left sidebar with navigation and workspace management
+- **TopNavigation** - Top utility bar
+- **PreviewPanel** - Data preview with optional read-only mode
+
+### Workspace Integration
+
+All routes accept a `workspace` query parameter:
+```
+?workspace={workspaceId}
+```
+
+Examples:
+- `/?workspace=workspace-123` - Data Explorer for specific workspace
+- `/config/templates?workspace=workspace-123` - Template management for workspace
+- `/explorer/list-viewer-456?workspace=workspace-123` - List viewer in specific workspace
+
+### Design Principles
+
+1. **Separation of Concerns**: Clear distinction between data exploration (read-only) and configuration (editing)
+2. **Hierarchical Structure**: Logical organization under Workspace → Section → Page
+3. **Backward Compatibility**: Legacy URLs redirect to new structure
+4. **Workspace Context**: All functionality is workspace-aware
+5. **Consistent Navigation**: Unified sidebar navigation across all pages
+
 ## 📝 MVP1 Scope
 
 The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).

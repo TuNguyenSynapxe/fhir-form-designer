@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import type { Workspace } from '../shared/types';
 
 interface WorkspaceManagerProps {
@@ -17,6 +18,7 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({
   onWorkspaceDelete,
 }) => {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [expandedWorkspaces, setExpandedWorkspaces] = useState<Set<string>>(new Set());
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState<string | null>(null);
   const [showExportModal, setShowExportModal] = useState<{
@@ -60,6 +62,17 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({
       localStorage.setItem('fhir-workspaces', JSON.stringify([defaultWorkspace]));
     }
   }, [currentWorkspace, onWorkspaceSelect]);
+
+  // Auto-expand current workspace
+  useEffect(() => {
+    if (currentWorkspace) {
+      setExpandedWorkspaces(prev => {
+        const newSet = new Set(prev);
+        newSet.add(currentWorkspace.id);
+        return newSet;
+      });
+    }
+  }, [currentWorkspace]);
 
   // Save workspaces to localStorage
   const saveWorkspaces = (updatedWorkspaces: Workspace[]) => {
@@ -163,6 +176,19 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({
   const predefinedIcons = ['📋', '🩺', '📄', '🗂️', '📊', '⚕️', '🏥', '📝', '🔬', '💊'];
   const predefinedColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6b7280'];
 
+  // Toggle workspace expansion
+  const toggleWorkspaceExpansion = (workspaceId: string) => {
+    setExpandedWorkspaces(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(workspaceId)) {
+        newSet.delete(workspaceId);
+      } else {
+        newSet.add(workspaceId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <div className="bg-white border-r border-gray-200 w-80 flex flex-col">
       {/* Header */}
@@ -227,36 +253,160 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({
 
       {/* Workspace List */}
       <div className="flex-1 overflow-y-auto">
-        <div className="p-2">
-          {workspaces.map((workspace) => (
-            <div
-              key={workspace.id}
-              className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-colors mb-1 ${
-                currentWorkspace?.id === workspace.id
-                  ? 'bg-blue-100 text-blue-900'
-                  : 'hover:bg-gray-100 text-gray-700'
-              }`}
-              onClick={() => onWorkspaceSelect(workspace)}
-            >
-              <div 
-                className="w-6 h-6 rounded-full flex items-center justify-center text-white flex-shrink-0"
-                style={{ backgroundColor: workspace.color }}
-              >
-                <span className="text-sm">{workspace.icon}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium truncate">{workspace.name}</div>
-                {workspace.description && (
-                  <div className="text-xs opacity-75 truncate">{workspace.description}</div>
+        <div className="p-2 space-y-2">
+          {workspaces.map((workspace) => {
+            const isExpanded = expandedWorkspaces.has(workspace.id);
+            const isCurrent = currentWorkspace?.id === workspace.id;
+            
+            return (
+              <div key={workspace.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                {/* Workspace Header */}
+                <div
+                  className={`flex items-center space-x-3 p-3 cursor-pointer transition-colors ${
+                    isCurrent
+                      ? 'bg-blue-100 text-blue-900'
+                      : 'hover:bg-gray-100 text-gray-700'
+                  }`}
+                >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleWorkspaceExpansion(workspace.id);
+                    }}
+                    className="p-1 hover:bg-gray-200 rounded transition-colors"
+                  >
+                    <svg
+                      className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                  
+                  <div
+                    onClick={() => {
+                      onWorkspaceSelect(workspace);
+                      // Ensure this workspace is expanded when selecting it
+                      setExpandedWorkspaces(prev => {
+                        const newSet = new Set(prev);
+                        newSet.add(workspace.id);
+                        return newSet;
+                      });
+                    }}
+                    className="flex items-center space-x-3 flex-1"
+                  >
+                    <div 
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-white flex-shrink-0"
+                      style={{ backgroundColor: workspace.color }}
+                    >
+                      <span className="text-sm">{workspace.icon}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{workspace.name}</div>
+                      {workspace.description && (
+                        <div className="text-xs opacity-75 truncate">{workspace.description}</div>
+                      )}
+                    </div>
+                    {workspace.isDefault && (
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                        Default
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Navigation Menu for Workspace */}
+                {isExpanded && (
+                  <div className="bg-gray-50 border-t border-gray-200">
+                    <nav className="py-2 px-3 space-y-1">
+                      {/* Data Explorer */}
+                      <Link
+                        to={`/?workspace=${workspace.id}`}
+                        className="flex items-center space-x-3 px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                        onClick={() => {
+                          onWorkspaceSelect(workspace);
+                          // Ensure this workspace is expanded when navigating to its content
+                          setExpandedWorkspaces(prev => {
+                            const newSet = new Set(prev);
+                            newSet.add(workspace.id);
+                            return newSet;
+                          });
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        📊 Data Explorer
+                      </Link>
+
+                      {/* Configuration */}
+                      <Link
+                        to={`/config?workspace=${workspace.id}`}
+                        className="flex items-center space-x-3 px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                        onClick={() => {
+                          onWorkspaceSelect(workspace);
+                          // Ensure this workspace is expanded when navigating to its content
+                          setExpandedWorkspaces(prev => {
+                            const newSet = new Set(prev);
+                            newSet.add(workspace.id);
+                            return newSet;
+                          });
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        ⚙️ Configuration
+                      </Link>
+                      
+                      {/* Templates */}
+                      <Link
+                        to={`/config/templates?workspace=${workspace.id}`}
+                        className="flex items-center space-x-2 px-6 py-1.5 text-sm text-gray-500 rounded-md hover:bg-gray-100 hover:text-gray-700 transition-colors ml-3"
+                        onClick={() => {
+                          onWorkspaceSelect(workspace);
+                          // Ensure this workspace is expanded when navigating to its content
+                          setExpandedWorkspaces(prev => {
+                            const newSet = new Set(prev);
+                            newSet.add(workspace.id);
+                            return newSet;
+                          });
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        📋 Templates
+                      </Link>
+                      
+                      {/* List Viewers */}
+                      <Link
+                        to={`/config/list-viewers?workspace=${workspace.id}`}
+                        className="flex items-center space-x-2 px-6 py-1.5 text-sm text-gray-500 rounded-md hover:bg-gray-100 hover:text-gray-700 transition-colors ml-3"
+                        onClick={() => {
+                          onWorkspaceSelect(workspace);
+                          // Ensure this workspace is expanded when navigating to its content
+                          setExpandedWorkspaces(prev => {
+                            const newSet = new Set(prev);
+                            newSet.add(workspace.id);
+                            return newSet;
+                          });
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                        </svg>
+                        📊 List Viewers
+                      </Link>
+                    </nav>
+                  </div>
                 )}
               </div>
-              {workspace.isDefault && (
-                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                  Default
-                </span>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

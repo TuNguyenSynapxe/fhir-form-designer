@@ -200,20 +200,22 @@ const DetailModal: React.FC<DetailModalProps> = ({
                   Click "Refresh" to load the FHIR resource details
                 </p>
                 
-                {/* Show row data preview */}
-                <div className="mt-6 text-left">
-                  <h4 className="font-medium text-gray-900 mb-2">Selected Row Data</h4>
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <div className="space-y-2">
-                      {Object.entries(rowData).map(([key, value]) => (
-                        <div key={key} className="flex justify-between text-sm">
-                          <span className="font-medium text-blue-900">{key}:</span>
-                          <span className="text-blue-700">{String(value)}</span>
-                        </div>
-                      ))}
+                {/* Show row data preview - development only */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mt-6 text-left">
+                    <h4 className="font-medium text-gray-900 mb-2">Selected Row Data (Debug)</h4>
+                    <div className="bg-blue-50 rounded-lg p-4">
+                      <div className="space-y-2">
+                        {Object.entries(rowData).map(([key, value]) => (
+                          <div key={key} className="flex justify-between text-sm">
+                            <span className="font-medium text-blue-900">{key}:</span>
+                            <span className="text-blue-700">{String(value)}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             ) : (
               /* FHIR Widget Display */

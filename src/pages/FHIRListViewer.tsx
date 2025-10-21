@@ -59,7 +59,7 @@ const FHIRListViewer: React.FC = () => {
         const workspaces = JSON.parse(storedWorkspaces);
         const defaultWorkspace = workspaces.find((w: any) => w.isDefault) || workspaces[0];
         if (defaultWorkspace) {
-          navigate(`/list-viewer?workspace=${defaultWorkspace.id}`);
+          navigate(`/config/list-viewers?workspace=${defaultWorkspace.id}`);
         }
       } catch (err) {
         console.error('Failed to load default workspace:', err);
@@ -92,7 +92,7 @@ const FHIRListViewer: React.FC = () => {
     if (!isLoading && listViewers.length > 0 && listViewerId && !currentListViewer) {
       console.warn(`List viewer ${listViewerId} not found, redirecting to index`);
       const workspaceParam = workspaceId ? `?workspace=${workspaceId}` : '';
-      navigate(`/list-viewer${workspaceParam}`);
+      navigate(`/config/list-viewers${workspaceParam}`);
     }
   }, [isLoading, listViewers, listViewerId, currentListViewer, navigate, workspaceId]);
 
@@ -126,7 +126,7 @@ const FHIRListViewer: React.FC = () => {
       try {
         const sampleData = saveSampleDataToLocalStorage();
         alert('Sample workspace created successfully!');
-        navigate(`/list-viewer?workspace=${sampleData.workspace.id}`);
+        navigate(`/config/list-viewers?workspace=${sampleData.workspace.id}`);
       } catch (err) {
         alert('Failed to create sample workspace: ' + (err instanceof Error ? err.message : 'Unknown error'));
       }
@@ -203,8 +203,8 @@ const FHIRListViewer: React.FC = () => {
                   ''
                 );
                 const targetUrl = targetWorkspaceId
-                  ? `/list-viewer?workspace=${targetWorkspaceId}`
-                  : '/list-viewer';
+                  ? `/config/list-viewers?workspace=${targetWorkspaceId}`
+                  : '/config/list-viewers';
                 try {
                   if (targetWorkspaceId) {
                     localStorage.setItem('last-workspace-id', targetWorkspaceId);
@@ -239,7 +239,7 @@ const FHIRListViewer: React.FC = () => {
           </div>
           <div className="flex gap-3">
             {/* Hide main navigation buttons on detail List Viewer page */}
-            <TopNavigation currentWorkspace={currentWorkspace} hideNav />
+            <TopNavigation currentWorkspace={currentWorkspace} showTools={false} />
           </div>
         </div>
         
@@ -266,7 +266,7 @@ const FHIRListViewer: React.FC = () => {
             <button
               onClick={() => {
                 const workspaceParam = workspaceId ? `?workspace=${workspaceId}` : '';
-                navigate(`/list-viewer${workspaceParam}`);
+                navigate(`/config/list-viewers${workspaceParam}`);
               }}
               className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
             >

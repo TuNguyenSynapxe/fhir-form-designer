@@ -8,6 +8,7 @@ interface PreviewPanelProps {
   config: ListViewerConfig | null;
   currentWorkspace: Workspace;
   templates?: Template[];
+  readOnly?: boolean;
 }
 
 interface ListingData {
@@ -20,8 +21,11 @@ interface ListingData {
 const PreviewPanel: React.FC<PreviewPanelProps> = ({
   config,
   currentWorkspace,
-  templates = []
+  templates = [],
+  readOnly = false // TODO: Implement readOnly behavior to disable editing
 }) => {
+  // Suppress unused variable warning - readOnly will be implemented later
+  void readOnly;
   const [isLoading, setIsLoading] = useState(false);
   const [listingData, setListingData] = useState<ListingData | null>(null);
   const [error, setError] = useState<ListViewerError | null>(null);

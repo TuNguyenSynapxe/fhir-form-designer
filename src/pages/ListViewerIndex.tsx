@@ -1,105 +1,75 @@
 // List Viewer Index page - shows tile UI of created list views
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { ListViewerConfig, Workspace } from '../shared/types';
 import { saveSampleDataToLocalStorage, addSampleDataToCurrentWorkspace } from '../mocks/sampleWorkspaceData';
 import TopNavigation from '../components/TopNavigation';
 import CreateListViewerModal from '../components/CreateListViewerModal';
 import WorkspaceManager from '../components/WorkspaceManager';
-import { useListViewerConfig, useWorkspaceData } from '../hooks/useFhirListViewer';
+import { useListViewerConfig } from '../hooks/useFhirListViewer';
 
 const ListViewerIndex: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+
   const [searchParams] = useSearchParams();
   const [showWorkspacePanel, setShowWorkspacePanel] = useState(true);
   const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   
-  // Derive workspace ID from multiple sources to avoid losing context
-  const urlWorkspaceId = searchParams.get('workspace');
-  const navState = location.state as any;
-  const fromDetail = !!navState?.fromListViewerDetail;
-  const stateWorkspaceId = navState?.workspaceId as string | undefined;
-  const persistedWorkspaceId = (() => {
-    try { return localStorage.getItem('last-workspace-id') || undefined; } catch { return undefined; }
-  })();
-  // Determine if persisted should override a default-workspace URL when not coming from detail.
-  let persistedOverrideApplied = false;
-  let workspaceId: string | undefined;
-  if (fromDetail) {
-    // Coming from detail: state > url > persisted
-    workspaceId = stateWorkspaceId || urlWorkspaceId || persistedWorkspaceId || undefined;
-  } else {
-    // Fresh load or direct navigation.
-    // If URL is a generic/default workspace but we have a distinct persisted one, prefer persisted.
-    if (urlWorkspaceId && persistedWorkspaceId && urlWorkspaceId === 'default-workspace' && persistedWorkspaceId !== 'default-workspace') {
-      workspaceId = persistedWorkspaceId;
-      persistedOverrideApplied = true;
-    } else {
-      workspaceId = urlWorkspaceId || stateWorkspaceId || persistedWorkspaceId || undefined;
-    }
-  }
+
   
-  // Use custom hooks
-  const { workspace, isLoading: workspaceLoading, error: workspaceError } = useWorkspaceData(workspaceId);
-  const { listViewers, isLoading: listViewerLoading, error: listViewerError } = useListViewerConfig(workspaceId);
-  
-  // Set current workspace from hook
+  // Load workspace data directly (matching Templates pattern)
   useEffect(() => {
-    if (workspace) {
-      setCurrentWorkspace(workspace);
+    const workspaceParam = searchParams.get('workspace');
+    if (workspaceParam && !currentWorkspace) {
+      // Load workspaces and set the current one based on URL parameter
+      const storedWorkspaces = localStorage.getItem('fhir-workspaces');
+      if (storedWorkspaces) {
+        try {
+          const workspaces = JSON.parse(storedWorkspaces);
+          const targetWorkspace = workspaces.find((w: Workspace) => w.id === workspaceParam);
+          if (targetWorkspace) {
+            setCurrentWorkspace(targetWorkspace);
+          }
+        } catch (error) {
+          console.error('Failed to load workspace from URL parameter:', error);
+        }
+      }
     }
-  }, [workspace]);
+  }, [searchParams, currentWorkspace]);
+
+  // Load list viewers data
+  const { listViewers, isLoading: listViewerLoading, error: listViewerError } = useListViewerConfig(currentWorkspace?.id);
   
   // Combined loading and error states
-  const isLoading = workspaceLoading || listViewerLoading;
-  const error = workspaceError || listViewerError;
+  const isLoading = listViewerLoading;
+  const error = listViewerError;
 
-  // Handle default workspace navigation ONLY when no workspace param is present.
-  // Respect: navigation state from detail view, or persisted last-workspace-id.
+  // Handle default workspace navigation when no workspace param is present
   useEffect(() => {
-    // Authoritative correction from detail
-    if (fromDetail && stateWorkspaceId && urlWorkspaceId !== stateWorkspaceId) {
-      navigate(`/list-viewer?workspace=${stateWorkspaceId}`, { replace: true });
-      return;
-    }
-    // Persisted override of default-workspace
-    if (!fromDetail && persistedOverrideApplied && workspaceId && urlWorkspaceId !== workspaceId) {
-      navigate(`/list-viewer?workspace=${workspaceId}`, { replace: true });
-      return;
-    }
-    // If URL already matches effective id, nothing to do
-    if (urlWorkspaceId && urlWorkspaceId === workspaceId) return;
-    // If we have an effective workspaceId but URL missing or mismatched, sync it
-    if (workspaceId && !urlWorkspaceId) {
-      navigate(`/list-viewer?workspace=${workspaceId}`, { replace: true });
-      return;
-    }
-    // Final fallback only if no sources produced a workspaceId
-    if (!workspaceId) {
+    const workspaceParam = searchParams.get('workspace');
+    if (!workspaceParam) {
       const storedWorkspaces = localStorage.getItem('fhir-workspaces');
       if (storedWorkspaces) {
         try {
           const workspaces = JSON.parse(storedWorkspaces);
           const defaultWorkspace = workspaces.find((w: any) => w.isDefault) || workspaces[0];
           if (defaultWorkspace) {
-            navigate(`/list-viewer?workspace=${defaultWorkspace.id}`, { replace: true });
+            navigate(`/config/list-viewers?workspace=${defaultWorkspace.id}`, { replace: true });
           }
         } catch (err) {
           console.error('Failed to load default workspace:', err);
         }
       }
     }
-  }, [fromDetail, stateWorkspaceId, urlWorkspaceId, workspaceId, persistedOverrideApplied, navigate]);
+  }, [searchParams, navigate]);
   
   // Workspace manager callbacks
   const handleWorkspaceCreate = (_data: Omit<Workspace, 'id' | 'createdAt' | 'updatedAt'>) => {
     // Creation handled inside WorkspaceManager component; refresh implicit via localStorage change
   };
-  const handleWorkspaceSelect = (ws: Workspace) => {
-    setCurrentWorkspace(ws);
-    navigate(`/list-viewer?workspace=${ws.id}`);
+  const handleWorkspaceSelect = (workspace: Workspace) => {
+    setCurrentWorkspace(workspace);
   };
   const handleWorkspaceUpdate = (updated: Workspace) => {
     if (currentWorkspace?.id === updated.id) setCurrentWorkspace(updated);
@@ -126,7 +96,7 @@ const ListViewerIndex: React.FC = () => {
       try {
         const sampleData = saveSampleDataToLocalStorage();
         alert('Sample workspace created successfully!');
-        navigate(`/list-viewer?workspace=${sampleData.workspace.id}`);
+        navigate(`/config/list-viewers?workspace=${sampleData.workspace.id}`);
       } catch (err) {
         alert('Failed to create sample workspace: ' + (err instanceof Error ? err.message : 'Unknown error'));
       }
@@ -147,8 +117,8 @@ const ListViewerIndex: React.FC = () => {
 
   // Handle clicking on a list viewer tile
   const handleListViewerClick = (listViewerId: string) => {
-    const workspaceParam = workspaceId ? `?workspace=${workspaceId}` : '';
-    navigate(`/list-viewer/${listViewerId}${workspaceParam}`);
+    const workspaceParam = currentWorkspace ? `?workspace=${currentWorkspace.id}` : '';
+    navigate(`/config/list-viewers/${listViewerId}${workspaceParam}`);
   };
 
   // Create new list viewer
@@ -163,7 +133,7 @@ const ListViewerIndex: React.FC = () => {
     parsed.listViewers.push(config);
     localStorage.setItem('fhir-list-viewers', JSON.stringify(parsed));
     // Navigate directly to detail view
-    navigate(`/list-viewer/${config.id}?workspace=${config.workspaceId}`);
+    navigate(`/config/list-viewers/${config.id}?workspace=${config.workspaceId}`);
   };
 
   if (isLoading) {

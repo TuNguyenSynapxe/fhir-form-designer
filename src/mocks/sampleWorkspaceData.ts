@@ -82,7 +82,7 @@ export const sampleTemplates: Template[] = [
         id: 'full-name',
         type: 'text',
         label: 'Full Name',
-        fhirPath: "name[0].family + ', ' + name[0].given[0]",
+        expression: "name[0].family + ', ' + name[0].given[0]",
         order: 2
       },
       {
@@ -208,7 +208,7 @@ export const sampleTemplates: Template[] = [
             id: 'full-name-complete',
             type: 'text',
             label: 'Full Name',
-            fhirPath: "name[0].prefix[0] + ' ' + name[0].given[0] + ' ' + name[0].family",
+            expression: "name[0].prefix[0] + ' ' + name[0].given[0] + ' ' + name[0].family",
             order: 1
           },
           {
