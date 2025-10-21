@@ -288,3 +288,84 @@ export interface TemplateValidationResult {
   isValid: boolean;
   errors: ValidationError[];
 }
+
+// FHIR List Viewer Types
+export interface AuthConfig {
+  type: 'none' | 'oauth2' | 'bearer' | 'basic';
+  clientId?: string;
+  scope?: string;
+  token?: string;
+  username?: string;
+  password?: string;
+}
+
+export interface ColumnConfig {
+  id: string;
+  header: string;
+  fhirPath: string;
+  width: 'auto' | 'small' | 'medium' | 'large';
+  sortable: boolean;
+  filterable: boolean;
+  type: 'text' | 'date' | 'number' | 'boolean';
+}
+
+export interface DetailConfig {
+  detailUrl: string;
+  parameterName: string;
+  parameterPath: string;
+  templateId?: string;
+}
+
+export interface ListViewerConfig {
+  id: string;
+  name: string;
+  description?: string;
+  workspaceId: string; // Reference to workspace - consistent with Template structure
+  
+  // API Configuration
+  listingUrl: string;
+  resourceType?: string; // FHIR resource type (Patient, Observation, etc.)
+  
+  // Authentication
+  authentication?: AuthConfig;
+  
+  // Table configuration
+  columns?: ColumnConfig[];
+  
+  // Detail view configuration
+  detailConfig?: DetailConfig;
+  
+  // Metadata
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// FHIR Bundle Response Types
+export interface FHIRBundleResponse {
+  resourceType: 'Bundle';
+  type: 'searchset' | 'collection' | 'transaction' | 'transaction-response' | 'batch' | 'batch-response' | 'history' | 'document';
+  total?: number;
+  link?: Array<{
+    relation: 'self' | 'first' | 'prev' | 'next' | 'last';
+    url: string;
+  }>;
+  entry?: Array<{
+    resource: FhirResource;
+    search?: {
+      mode: 'match' | 'include' | 'outcome';
+    };
+  }>;
+}
+
+// Error Types for List Viewer
+export interface ListViewerError {
+  message: string;
+  code?: string;
+  details?: string;
+}
+
+// List Viewer Storage (extends workspace concept)
+export interface ListViewerStorage {
+  listViewers: ListViewerConfig[];
+  currentListViewer?: ListViewerConfig;
+}

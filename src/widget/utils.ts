@@ -6,6 +6,23 @@ export interface ExportedWorkspace extends Workspace {
 }
 
 /**
+ * Encode a workspace with templates to base64
+ */
+export function encodeWorkspace(workspace: Workspace, templates: Template[]): string {
+  try {
+    const exportedWorkspace: ExportedWorkspace = {
+      ...workspace,
+      templates
+    };
+    
+    const workspaceString = JSON.stringify(exportedWorkspace);
+    return btoa(workspaceString);
+  } catch (error) {
+    throw new Error(`Failed to encode workspace: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
  * Decode a base64 encoded workspace
  */
 export function decodeWorkspace(base64String: string): ExportedWorkspace {

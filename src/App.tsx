@@ -3,6 +3,8 @@ import Templates from './pages/Templates';
 import CreateTemplate from './pages/CreateTemplate';
 import Preview from './pages/Preview';
 import WidgetTest from './pages/WidgetTest';
+import ListViewerIndex from './pages/ListViewerIndex';
+import FHIRListViewer from './pages/FHIRListViewer';
 
 function App() {
   return (
@@ -13,6 +15,8 @@ function App() {
           <Route path="/create" element={<CreateTemplate />} />
           <Route path="/preview" element={<Preview />} />
           <Route path="/widget-test" element={<WidgetTest />} />
+          <Route path="/list-viewer" element={<ListViewerIndex />} />
+          <Route path="/list-viewer/:listViewerId" element={<FHIRListViewer />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

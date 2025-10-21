@@ -4,6 +4,7 @@ import type { Template, FhirResourceType, Workspace } from '../shared/types';
 import { getDefaultFieldsForResourceType } from '../shared/defaultFields';
 import { getSampleDataByResourceType } from '../shared/sampleData';
 import WorkspaceManager from '../components/WorkspaceManager';
+import TopNavigation from '../components/TopNavigation';
 
 const Templates: React.FC = () => {
   const navigate = useNavigate();
@@ -260,42 +261,6 @@ const Templates: React.FC = () => {
     alert(`Successfully generated ${newTemplates.length} sample templates for: ${resourceNames}`);
   };
 
-  const importTemplate = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const template: Template = JSON.parse(e.target?.result as string);
-            // Generate new ID and assign to current workspace
-            template.id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-            template.workspaceId = currentWorkspace?.id || 'default-workspace';
-            template.updatedAt = new Date().toISOString();
-            
-            // Get all templates from localStorage and add the new one
-            const stored = localStorage.getItem('fhir-templates');
-            const allTemplates = stored ? JSON.parse(stored).templates || [] : [];
-            const updatedAllTemplates = [...allTemplates, template];
-            
-            localStorage.setItem('fhir-templates', JSON.stringify({ templates: updatedAllTemplates }));
-            
-            // Update local state with current workspace templates
-            const updatedTemplates = [...templates, template];
-            setTemplates(updatedTemplates);
-          } catch (error) {
-            alert('Failed to import template. Please check the file format.');
-          }
-        };
-        reader.readAsText(file);
-      }
-    };
-    input.click();
-  };
-
   const filteredTemplates = templates.filter(template => {
     const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       template.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -341,24 +306,7 @@ const Templates: React.FC = () => {
             </div>
           </div>
           <div className="flex gap-3">
-            <Link
-              to="/widget-test"
-              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
-            >
-              🧪 Widget Test
-            </Link>
-            <button
-              onClick={importTemplate}
-              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Import Template
-            </button>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Create New Template
-            </button>
+            <TopNavigation currentWorkspace={currentWorkspace} />
           </div>
         </div>
         
@@ -407,6 +355,19 @@ const Templates: React.FC = () => {
             </select>
           </div>
         </div>
+      </div>
+
+      {/* Template Actions */}
+      <div className="mb-6 flex items-center justify-between">
+        <div className="text-sm text-gray-600">
+          Template Testing & Management
+        </div>
+        <Link
+          to="/widget-test"
+          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 text-sm"
+        >
+          🧪 Widget Test
+        </Link>
       </div>
 
       {/* Resource Type Summary */}
@@ -513,6 +474,24 @@ const Templates: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Create New Template Card */}
+          <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="w-full h-full p-6 text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset rounded-lg"
+            >
+              <div className="flex flex-col items-center justify-center min-h-[200px]">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Create New Template</h3>
+                <p className="text-sm text-gray-600">Start building a new FHIR template</p>
+              </div>
+            </button>
+          </div>
+          
           {filteredTemplates.map((template) => (
             <div
               key={template.id}
